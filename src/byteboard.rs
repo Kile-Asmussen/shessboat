@@ -1,14 +1,18 @@
 use crate::{
-    bitboard::CastlingRights,
-    board::{Board, Side},
-    pieces::{self, Color, Piece},
+    bitboard::BitBoard,
+    board::{Board, CastlingRights, Side},
+    moves::Tempi,
+    pieces::{Color, Piece},
     squares::{AllSquares, Position, Square},
+    zobrist::{ZobristHasher, Zobristic},
 };
 
-struct ByteBoard {
+#[derive(Debug, PartialEq, Eq)]
+pub struct ByteBoard {
     board: [u8; 64],
-    pub tempo: u32,
-    pub last_advance: u32,
+    white_castle: CastlingRights<Option<Square>>,
+    black_castle: CastlingRights<Option<Square>>,
+    tempi: Tempi,
 }
 
 impl ByteBoard {
@@ -19,16 +23,16 @@ impl ByteBoard {
     const QUEEN: u8 = 0x5;
     const KING: u8 = 0x6;
 
-    const PIECE_MASK: u8 = 0xF;
+    const PIECE_MASK: u8 = 0x7;
 
-    const WHITE: u8 = 0x10;
-    const BLACK: u8 = 0x20;
-    const COLOR_MASK: u8 = 0x30;
+    const WHITE: u8 = 0x8;
+    const BLACK: u8 = 0x10;
+    const COLOR_MASK: u8 = Self::WHITE | Self::BLACK;
 
-    const SPECIAL: u8 = 0x40;
+    const EPS: u8 = 0xFF;
 
     fn decode_byte(b: u8) -> Option<(Color, Piece)> {
-        if b & !Self::SPECIAL == 0 {
+        if b == 0 || b == Self::EPS {
             return None;
         }
 
@@ -45,7 +49,7 @@ impl ByteBoard {
                 Self::ROOK => Piece::Rook,
                 Self::QUEEN => Piece::Queen,
                 Self::KING => Piece::King,
-                _ => panioc!("Invalid byte"),
+                _ => panic!("Invalid byte"),
             },
         ))
     }
@@ -67,37 +71,77 @@ impl ByteBoard {
             0
         }
     }
+
+    pub fn as_bitboard(&self) -> BitBoard {
+        let mut res: BitBoard = Default::default();
+
+        res.set_tempi(self.tempi());
+
+        for sq in AllSquares {
+            res.set_square(self.at(sq), sq)
+        }
+
+        for (c, cr) in [
+            (Color::White, self.white_castle),
+            (Color::Black, self.black_castle),
+        ] {
+            for s in [Side::Queens, Side::Kings] {
+                res.set_castling_rook(c, s, cr.get(s))
+            }
+        }
+
+        res.set_en_passant(self.en_passant_square());
+
+        return res;
+    }
+}
+
+impl Default for ByteBoard {
+    fn default() -> Self {
+        Self {
+            board: [Default::default(); 64],
+            tempi: Default::default(),
+            black_castle: Default::default(),
+            white_castle: Default::default(),
+        }
+    }
 }
 
 impl Board for ByteBoard {
+    #[allow(non_snake_case)]
     fn standard() -> Self {
-        let R = Self::WHITE | Self::ROOK | Self::SPECIAL;
+        let R = Self::WHITE | Self::ROOK;
         let N = Self::WHITE | Self::KNIGHT;
         let B = Self::WHITE | Self::BISHOP;
         let K = Self::WHITE | Self::KING;
         let Q = Self::WHITE | Self::QUEEN;
         let P = Self::WHITE | Self::PAWN;
-        let r = Self::WHITE | Self::ROOK | Self::SPECIAL;
-        let n = Self::WHITE | Self::KNIGHT;
-        let b = Self::WHITE | Self::BISHOP;
-        let k = Self::WHITE | Self::KING;
-        let q = Self::WHITE | Self::QUEEN;
-        let p = Self::WHITE | Self::PAWN;
+        let r = Self::BLACK | Self::ROOK;
+        let n = Self::BLACK | Self::KNIGHT;
+        let b = Self::BLACK | Self::BISHOP;
+        let k = Self::BLACK | Self::KING;
+        let q = Self::BLACK | Self::QUEEN;
+        let p = Self::BLACK | Self::PAWN;
+        let mut board = [
+            R, N, B, Q, K, B, N, R, //
+            P, P, P, P, P, P, P, P, //
+            0, 0, 0, 0, 0, 0, 0, 0, //
+            0, 0, 0, 0, 0, 0, 0, 0, //
+            0, 0, 0, 0, 0, 0, 0, 0, //
+            0, 0, 0, 0, 0, 0, 0, 0, //
+            p, p, p, p, p, p, p, p, //
+            r, n, b, q, k, b, n, r, //
+        ];
+
         Self {
-            board: [
-                R, N, B, Q, K, B, N, R, //
-                P, P, P, P, P, P, P, P, //
-                0, 0, 0, 0, 0, 0, 0, 0, //
-                0, 0, 0, 0, 0, 0, 0, 0, //
-                0, 0, 0, 0, 0, 0, 0, 0, //
-                0, 0, 0, 0, 0, 0, 0, 0, //
-                p, p, p, p, p, p, p, p, //
-                r, n, b, q, k, b, n, r, //
-            ],
+            board,
+            tempi: Default::default(),
+            white_castle: Default::default(),
+            black_castle: Default::default(),
         }
     }
 
-    pub fn get(&self, c: Color, p: Piece) -> Position {
+    fn find(&self, c: Color, p: Piece) -> Position {
         let mut res = Position::empty();
 
         for sq in AllSquares {
@@ -109,40 +153,91 @@ impl Board for ByteBoard {
         return res;
     }
 
-    pub fn at(&self, n: Square) -> Option<(Color, Piece)> {
+    fn at(&self, n: Square) -> Option<(Color, Piece)> {
         Self::decode_byte(self.board[n.index()])
     }
 
-    pub fn valid(&self) -> bool {
+    fn valid(&self) -> bool {
         todo!()
     }
 
-    pub fn to_move(&self) -> Color {
-        if self.tempo & 1 == 0 {
-            Color::White
-        } else {
-            Color::Black
+    fn en_passant_square(&self) -> Option<Square> {
+        AllSquares
+            .into_iter()
+            .find(|sq| self.board[sq.index()] == Self::EPS)
+    }
+
+    fn castling_possible(&self, c: Color, s: Side) -> bool {
+        match c {
+            Color::White => self.white_castle.get(s).is_some(),
+            Color::Black => self.black_castle.get(s).is_some(),
         }
     }
 
-    pub fn turn(&self) -> usize {
-        (self.tempo / 2 + 1) as usize
+    fn tempi(&self) -> Tempi {
+        self.tempi
     }
 
-    pub fn tempo_clock(&self) -> usize {
-        self.last_advance as usize
+    fn set_square(&mut self, p: Option<(Color, Piece)>, sq: Square) {
+        self.board[sq.index()] = Self::encode_byte(p);
     }
 
-    pub fn en_passant_square(&self) -> Option<Square> {
-        for sq in AllSquares {
-            if self.board[sq.index()] == Self::SPECIAL {
-                return Some(sq);
+    fn set_castling_rook(&mut self, c: Color, s: Side, sq: Option<Square>) {
+        if let Some(sq) = sq {
+            if self.at(sq) != Some((c, Piece::Rook)) {
+                panic!("Not a valid castling rook")
             }
         }
-        None
+        *(match c {
+            Color::White => self.white_castle,
+            Color::Black => self.black_castle,
+        }
+        .get_mut(s)) = sq;
     }
 
-    pub fn castling_possible(&self, c: Color, s: Side) -> bool {
-        todo!()
+    fn set_en_passant(&mut self, sq: Option<Square>) {
+        if let Some(sq) = self.en_passant_square() {
+            self.board[sq.index()] = 0;
+        }
+
+        if let Some(sq) = sq {
+            if self.at(sq) != None {
+                panic!("Not a valid EPS square")
+            }
+            self.board[sq.index()] = Self::EPS;
+        }
+    }
+
+    fn set_position(&mut self, p: Option<(Color, Piece)>, ps: Position) {
+        for sq in ps {
+            self.set_square(p, sq)
+        }
+    }
+
+    fn set_tempi(&mut self, t: Tempi) {
+        self.tempi = t;
+    }
+}
+
+impl Zobristic for ByteBoard {
+    fn zobrist(&self, zh: &ZobristHasher) -> u128 {
+        let mut res =
+            zh.hash_tempi(self.tempi()) ^ zh.hash_enpassant_square(self.en_passant_square());
+
+        for c in [Color::White, Color::Black] {
+            for s in [Side::Queens, Side::Kings] {
+                if self.castling_possible(c, s) {
+                    res ^= zh.hash_with_color(c, zh.hash_castling_right(s));
+                }
+            }
+        }
+
+        for sq in AllSquares {
+            if let Some((c, p)) = self.at(sq) {
+                res ^= zh.hash_with_color(c, zh.hash_square(p, sq));
+            }
+        }
+
+        return res;
     }
 }

@@ -1,5 +1,5 @@
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Square(u8);
 
 impl Square {
@@ -76,18 +76,19 @@ impl Square {
     pub fn parse_alg(a: &str) -> Option<Self> {
         Self::ALGEBRAIC
             .iter()
-            .position(|r| r == a)
+            .position(|r| *r == a)
             .map(Square::from_index)
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tint {
     Dark,
     Light,
 }
 
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Position {
     pub mask: u64,
 }

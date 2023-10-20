@@ -5,5 +5,6 @@ pub mod elements;
 pub mod fen;
 pub mod moves;
 pub mod tempo;
+pub mod validity;
 
 fn main() {}

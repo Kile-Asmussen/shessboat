@@ -1,8 +1,9 @@
 use crate::{
-    board::{Board, Validity},
+    board::Board,
     elements::PieceColor,
     fen::XFen,
     moves::{GeneralMove, Move},
+    validity::Validity,
 };
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

@@ -2,7 +2,7 @@ use crate::{
     board::{Board, Validity},
     elements::Piece,
     fen::XFen,
-    moves::GeneralMove,
+    moves::{CastlingMove, EnPassantCapture, GeneralMove, PawnPromotion, StandardMove},
 };
 
 #[repr(transparent)]
@@ -31,6 +31,29 @@ impl Board for Byteboard {
     }
 
     fn valid_move(&self, mv: GeneralMove) -> Validity {
-        todo!()
+        match mv {
+            GeneralMove::Castling(c) => self.valid_castling(c),
+            GeneralMove::EnPassant(e) => self.valid_enpassant(e),
+            GeneralMove::Promotion(p) => self.valid_promotion(p),
+            GeneralMove::Standard(s) => self.valid_standard_move(s),
+        }
+    }
+}
+
+impl Byteboard {
+    fn valid_castling(&self, mv: CastlingMove) -> Validity {
+        Validity::ProbablyValid
+    }
+
+    fn valid_enpassant(&self, mv: EnPassantCapture) -> Validity {
+        Validity::ProbablyValid
+    }
+
+    fn valid_promotion(&self, mv: PawnPromotion) -> Validity {
+        Validity::ProbablyValid
+    }
+
+    fn valid_standard_move(&self, mv: StandardMove) -> Validity {
+        Validity::ProbablyValid
     }
 }

@@ -169,6 +169,20 @@ impl BitBoard {
 
         res.set_tempi(self.tempi());
 
+        for (c, h) in [(Color::White, &self.white), (Color::Black, &self.black)] {
+            for s in [Side::Queens, Side::Kings] {
+                res.set_castling_rook(c, s, h.castling_rights.get(s))
+            }
+
+            use Piece::*;
+
+            for p in [Pawn, Knight, Bishop, Rook, Queen, King] {
+                res.set_position(Some((c, p)), *h.get(p))
+            }
+        }
+
+        res.set_en_passant(self.en_passant_square());
+
         return res;
     }
 }

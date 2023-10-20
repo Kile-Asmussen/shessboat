@@ -24,12 +24,12 @@ impl Color {
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Piece {
-    King,
-    Queen,
-    Rook,
-    Bishop,
+    Pawn = 1,
     Knight,
-    Pawn,
+    Bishop,
+    Rook,
+    Queen,
+    King,
 }
 
 impl Piece {

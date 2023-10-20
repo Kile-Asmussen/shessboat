@@ -1,5 +1,10 @@
 use crate::elements::{Piece, PieceColor, PieceValue, Square};
 
+pub trait Move: Debug + PartialEq + Eq + Clone + Copy {
+    fn uci(self) -> String;
+    fn color(self) -> PieceColor;
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct CastlingMove {
     pub color: PieceColor,
@@ -9,13 +14,17 @@ pub struct CastlingMove {
     pub rook_to: Square,
 }
 
-impl CastlingMove {
+impl Move for CastlingMove {
     fn uci(self) -> String {
         format!(
             "{}{}",
             self.king_from.algebraic(),
             self.rook_from.algebraic()
         )
+    }
+
+    fn color(self) -> PieceColor {
+        self.color
     }
 }
 
@@ -27,7 +36,7 @@ pub struct PawnPromotion {
     pub into: PieceValue,
 }
 
-impl PawnPromotion {
+impl Move for PawnPromotion {
     fn uci(self) -> String {
         format!(
             "{}{}={}",
@@ -35,6 +44,10 @@ impl PawnPromotion {
             self.to.algebraic(),
             self.into.letter()
         )
+    }
+
+    fn color(self) -> PieceColor {
+        self.color
     }
 }
 
@@ -46,9 +59,13 @@ pub struct EnPassantCapture {
     pub capture: Square,
 }
 
-impl EnPassantCapture {
+impl Move for EnPassantCapture {
     fn uci(self) -> String {
         format!("{}{}", self.from.algebraic(), self.to.algebraic())
+    }
+
+    fn color(self) -> PieceColor {
+        self.color
     }
 }
 
@@ -60,27 +77,42 @@ pub struct StandardMove {
     pub capture: Option<Piece>,
 }
 
-impl StandardMove {
+impl Move for StandardMove {
     fn uci(self) -> String {
         format!("{}{}", self.from.algebraic(), self.to.algebraic())
+    }
+
+    fn color(self) -> PieceColor {
+        self.piece.color()
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Move {
+pub enum GeneralMove {
     Castling(CastlingMove),
     EnPassant(EnPassantCapture),
     Promotion(PawnPromotion),
     Standard(StandardMove),
 }
 
-impl Move {
-    pub fn uci(self) -> String {
+impl Move for GeneralMove {
+    fn uci(self) -> String {
+        use GeneralMove::*;
         match self {
-            Move::Castling(c) => c.uci(),
-            Move::EnPassant(e) => e.uci(),
-            Move::Promotion(p) => p.uci(),
-            Move::Standard(s) => s.uci(),
+            Castling(c) => c.uci(),
+            EnPassant(e) => e.uci(),
+            Promotion(p) => p.uci(),
+            Standard(s) => s.uci(),
+        }
+    }
+
+    fn color(self) -> PieceColor {
+        use GeneralMove::*;
+        match self {
+            Castling(c) => c.color(),
+            EnPassant(e) => e.color(),
+            Promotion(p) => p.color(),
+            Standard(s) => s.color(),
         }
     }
 }

@@ -145,16 +145,16 @@ impl Piece {
         Some(Self::new(v, c))
     }
 
-    fn decode(self) -> (PieceValue, PieceColor) {
+    pub fn decode(self) -> (PieceValue, PieceColor) {
         (self.value(), self.color())
     }
 
-    fn color(self) -> PieceColor {
+    pub fn color(self) -> PieceColor {
         const COLOR_MASK: u8 = PieceColor::White as u8 | PieceColor::Black as u8;
         unsafe { std::mem::transmute(self.0.get() & COLOR_MASK) }
     }
 
-    fn value(self) -> PieceValue {
+    pub fn value(self) -> PieceValue {
         const VALUE_MASK: u8 = PieceValue::Pawn as u8
             | PieceValue::Knight as u8
             | PieceValue::Bishop as u8

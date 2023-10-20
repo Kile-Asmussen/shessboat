@@ -1,4 +1,9 @@
-use crate::{board::Board, elements::Piece, fen::XFen};
+use crate::{
+    board::{Board, Validity},
+    elements::Piece,
+    fen::XFen,
+    moves::GeneralMove,
+};
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,5 +28,9 @@ impl Board for Byteboard {
         }
 
         res
+    }
+
+    fn valid_move(&self, mv: GeneralMove) -> Validity {
+        todo!()
     }
 }

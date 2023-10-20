@@ -4,7 +4,6 @@ pub mod castling;
 pub mod elements;
 pub mod fen;
 pub mod moves;
-pub mod moves;
 pub mod tempo;
 
 fn main() {}

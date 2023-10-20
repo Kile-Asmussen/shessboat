@@ -1,10 +1,15 @@
-use crate::{board::Board, elements::PieceColor, fen::XFen};
+use crate::{
+    board::{Board, Validity},
+    elements::PieceColor,
+    fen::XFen,
+    moves::{GeneralMove, Move},
+};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Tempo {
     tempo: usize,
-    last_advance: usize
-};
+    last_advance: usize,
+}
 
 impl Tempo {
     pub fn turn(self) -> usize {
@@ -41,6 +46,18 @@ impl Board for Tempo {
             } else {
                 1
             };
-        Tempo { tempo, last_advance: tempo - fen.tempo_clock }
+        Tempo {
+            tempo,
+            last_advance: tempo - fen.tempo_clock,
+        }
+    }
+
+    fn valid_move(&self, mv: GeneralMove) -> Validity {
+        use Validity::*;
+        if mv.color() != self.to_move() {
+            DefinitelyInvalid
+        } else {
+            ProbablyValid
+        }
     }
 }

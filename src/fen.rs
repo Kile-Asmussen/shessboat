@@ -1,9 +1,4 @@
-use std::{default, fmt::Display, iter::Sum};
-
-use crate::{
-    castling::CastlingRights,
-    elements::{Piece, PieceColor, Square},
-};
+use crate::elements::{Piece, PieceColor, Square};
 
 fn parse_rank(rank: &str) -> Result<[Option<Piece>; 8], &str> {
     const RANK_CHARS: [char; 20] = [

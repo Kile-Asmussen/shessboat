@@ -1,23 +1,26 @@
+use std::ops::{Add, AddAssign};
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Validity {
     #[default]
     ProbablyValid,
-    DefinitelyInvalid,
+    DefinitelyInvalid(&'static str),
 }
+
+use Validity::*;
 
 impl Validity {
-    fn assert(self) {
-        assert_eq!(self, Validity::ProbablyValid);
+    pub fn assert(self) {
+        if let DefinitelyInvalid(msg) = self {
+            panic!("Validation failed: {}", msg);
+        }
     }
-}
 
-impl From<bool> for Validity {
-    fn from(value: bool) -> Self {
-        use Validity::*;
-        if value {
-            ProbablyValid
+    pub fn explain(self, msg: &'static str) -> Validity {
+        if let DefinitelyInvalid("") = self {
+            DefinitelyInvalid(msg)
         } else {
-            DefinitelyInvalid
+            self
         }
     }
 }
@@ -26,10 +29,34 @@ impl Add<Validity> for Validity {
     type Output = Validity;
 
     fn add(self, rhs: Validity) -> Self::Output {
-        if self == Self::DefinitelyInvalid || rhs == Self::DefinitelyInvalid {
-            Self::DefinitelyInvalid
+        if let DefinitelyInvalid(s) = self {
+            self
         } else {
-            Self::ProbablyValid
+            rhs
+        }
+    }
+}
+
+impl AddAssign<Validity> for Validity {
+    fn add_assign(&mut self, rhs: Validity) {
+        *self = *self + rhs;
+    }
+}
+
+pub trait Validatable {
+    fn valid(&self) -> Validity;
+}
+
+pub trait Validator<T> {
+    fn validate(&self, it: &T) -> Validity;
+}
+
+impl Validatable for bool {
+    fn valid(&self) -> Validity {
+        if *self {
+            ProbablyValid
+        } else {
+            DefinitelyInvalid("")
         }
     }
 }

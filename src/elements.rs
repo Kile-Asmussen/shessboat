@@ -10,9 +10,10 @@ pub enum PieceColor {
     Black = 0x20,
 }
 
+use PieceColor::*;
+
 impl PieceColor {
     pub fn letter(self) -> char {
-        use PieceColor::*;
         match self {
             White => 'w',
             Black => 'b',
@@ -20,7 +21,6 @@ impl PieceColor {
     }
 
     pub fn from_letter(c: char) -> Option<Self> {
-        use PieceColor::*;
         Some(match c {
             'w' | 'W' => White,
             'b' | 'B' => Black,
@@ -28,28 +28,35 @@ impl PieceColor {
         })
     }
 
+    pub fn base_rank(self) -> usize {
+        match self {
+            White => 1,
+            Black => 8,
+        }
+    }
+
     fn pawn(self) -> Piece {
-        Piece::new(PieceValue::Pawn, self)
+        Piece::new(Pawn, self)
     }
 
     fn knight(self) -> Piece {
-        Piece::new(PieceValue::Knight, self)
+        Piece::new(Knight, self)
     }
 
     fn bishop(self) -> Piece {
-        Piece::new(PieceValue::Bishop, self)
+        Piece::new(Bishop, self)
     }
 
     fn rook(self) -> Piece {
-        Piece::new(PieceValue::Rook, self)
+        Piece::new(Rook, self)
     }
 
     fn queen(self) -> Piece {
-        Piece::new(PieceValue::Queen, self)
+        Piece::new(Queen, self)
     }
 
     fn king(self) -> Piece {
-        Piece::new(PieceValue::King, self)
+        Piece::new(King, self)
     }
 }
 
@@ -64,26 +71,28 @@ pub enum PieceValue {
     King = 6,
 }
 
+use PieceValue::*;
+
 impl PieceValue {
     pub fn millipawns(self) -> i64 {
         match self {
-            PieceValue::King => i64::MAX,
-            PieceValue::Queen => 9000,
-            PieceValue::Rook => 5000,
-            PieceValue::Bishop => 3333,
-            PieceValue::Knight => 3000,
-            PieceValue::Pawn => 1000,
+            King => 10_000_000_000_000,
+            Queen => 9000,
+            Rook => 5000,
+            Bishop => 3333,
+            Knight => 3000,
+            Pawn => 1000,
         }
     }
 
     pub fn letter(self) -> char {
         match self {
-            PieceValue::Pawn => 'P',
-            PieceValue::Knight => 'N',
-            PieceValue::Bishop => 'B',
-            PieceValue::Rook => 'R',
-            PieceValue::Queen => 'Q',
-            PieceValue::King => 'K',
+            Pawn => 'P',
+            Knight => 'N',
+            Bishop => 'B',
+            Rook => 'R',
+            Queen => 'Q',
+            King => 'K',
         }
     }
 
@@ -106,8 +115,6 @@ impl Piece {
     }
 
     pub fn letter(self: Self) -> char {
-        use PieceColor::*;
-        use PieceValue::*;
         match self.decode() {
             (King, White) => 'K',
             (Queen, White) => 'Q',
@@ -125,8 +132,6 @@ impl Piece {
     }
 
     pub fn from_letter(l: char) -> Option<Self> {
-        use PieceColor::*;
-        use PieceValue::*;
         let (v, c) = match l {
             'K' => (King, White),
             'Q' => (Queen, White),
@@ -150,17 +155,13 @@ impl Piece {
     }
 
     pub fn color(self) -> PieceColor {
-        const COLOR_MASK: u8 = PieceColor::White as u8 | PieceColor::Black as u8;
+        const COLOR_MASK: u8 = White as u8 | Black as u8;
         unsafe { std::mem::transmute(self.0.get() & COLOR_MASK) }
     }
 
     pub fn value(self) -> PieceValue {
-        const VALUE_MASK: u8 = PieceValue::Pawn as u8
-            | PieceValue::Knight as u8
-            | PieceValue::Bishop as u8
-            | PieceValue::Rook as u8
-            | PieceValue::Queen as u8
-            | PieceValue::King as u8;
+        const VALUE_MASK: u8 =
+            Pawn as u8 | Knight as u8 | Bishop as u8 | Rook as u8 | Queen as u8 | King as u8;
         unsafe { std::mem::transmute(self.0.get() & VALUE_MASK) }
     }
 }
@@ -176,7 +177,7 @@ pub enum SquareTint {
 pub struct Square(u8);
 
 impl Square {
-    fn index(self) -> usize {
+    pub fn index(self) -> usize {
         self.0 as usize
     }
 

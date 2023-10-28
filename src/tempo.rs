@@ -1,9 +1,9 @@
 use crate::{
     board::Board,
     elements::PieceColor,
-    fen::XFen,
-    moves::{GeneralMove, Move},
-    validity::Validity,
+    moves::{ChessMove, GeneralMove, PawnMove},
+    sfen::SFen,
+    validity::{Validatable, Validator, Validity},
 };
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -40,7 +40,7 @@ impl Tempo {
 }
 
 impl Board for Tempo {
-    fn new(fen: &XFen) -> Self {
+    fn new(fen: &SFen) -> Self {
         let tempo = fen.turn * 2
             + if fen.to_move == PieceColor::White {
                 0
@@ -52,13 +52,23 @@ impl Board for Tempo {
             last_advance: tempo - fen.tempo_clock,
         }
     }
+}
 
-    fn valid_move(&self, mv: GeneralMove) -> Validity {
-        use Validity::*;
-        if mv.color() != self.to_move() {
-            DefinitelyInvalid
-        } else {
-            ProbablyValid
-        }
+impl Validatable for Tempo {
+    fn valid(&self) -> Validity {
+        (self.tempi_since_advance() >= 151)
+            .valid()
+            .explain("Forced draw due to lack of progress")
+    }
+}
+
+impl Validator<GeneralMove> for Tempo {
+    fn validate(&self, it: &GeneralMove) -> Validity {
+        (it.color() != self.to_move())
+            .valid()
+            .explain(match it.color() {
+                PieceColor::White => "Not white to move",
+                PieceColor::Black => "Not black to move",
+            })
     }
 }

@@ -123,7 +123,7 @@ fn parse_tempo_clock(int: &str) -> Result<usize, &str> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct XFen {
+pub struct SFen {
     pub board: [[Option<Piece>; 8]; 8],
     pub to_move: PieceColor,
     pub castling: Vec<Square>,
@@ -132,7 +132,7 @@ pub struct XFen {
     pub tempo_clock: usize,
 }
 
-impl Default for XFen {
+impl Default for SFen {
     fn default() -> Self {
         Self {
             board: Default::default(),
@@ -145,14 +145,14 @@ impl Default for XFen {
     }
 }
 
-fn parse_xfen(fen: &str) -> Result<XFen, &str> {
+fn parse_sfen(fen: &str) -> Result<SFen, &str> {
     let chunks = fen.split_ascii_whitespace().collect::<Vec<&str>>();
 
     let [board, to_move, castling, eps, turn, clock] = chunks[..] else {
         return Err("FEN string must have six parts");
     };
 
-    Ok(XFen {
+    Ok(SFen {
         board: parse_board(board)?,
         to_move: parse_to_move(to_move)?,
         castling: parse_castling(castling)?,
@@ -162,7 +162,7 @@ fn parse_xfen(fen: &str) -> Result<XFen, &str> {
     })
 }
 
-impl ToString for XFen {
+impl ToString for SFen {
     fn to_string(&self) -> String {
         let mut res = String::new();
 

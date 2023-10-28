@@ -1,13 +1,30 @@
+use std::ops::{Index, IndexMut};
+
 use crate::{
-    board::{Board, Validity},
-    elements::Piece,
-    fen::XFen,
-    moves::{CastlingMove, EnPassantCapture, GeneralMove, PawnPromotion, StandardMove},
+    board::Board,
+    elements::{Piece, Square},
+    moves::{CastlingMove, MoveValidator, PawnMove, PieceMove},
+    sfen::SFen,
+    validity::{Validatable, Validator, Validity},
 };
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Byteboard([Option<Piece>; 64]);
+
+impl Index<Square> for Byteboard {
+    type Output = Option<Piece>;
+
+    fn index(&self, index: Square) -> &Self::Output {
+        &self.0[index.index()]
+    }
+}
+
+impl IndexMut<Square> for Byteboard {
+    fn index_mut(&mut self, index: Square) -> &mut Self::Output {
+        &mut self.0[index.index()]
+    }
+}
 
 impl Default for Byteboard {
     fn default() -> Self {
@@ -16,7 +33,7 @@ impl Default for Byteboard {
 }
 
 impl Board for Byteboard {
-    fn new(fen: &XFen) -> Self {
+    fn new(fen: &SFen) -> Self {
         let mut res: Byteboard = Default::default();
         let mut i = 0;
 
@@ -29,31 +46,30 @@ impl Board for Byteboard {
 
         res
     }
+}
 
-    fn valid_move(&self, mv: GeneralMove) -> Validity {
-        match mv {
-            GeneralMove::Castling(c) => self.valid_castling(c),
-            GeneralMove::EnPassant(e) => self.valid_enpassant(e),
-            GeneralMove::Promotion(p) => self.valid_promotion(p),
-            GeneralMove::Standard(s) => self.valid_standard_move(s),
-        }
+impl Validatable for Byteboard {
+    fn valid(&self) -> Validity {
+        Default::default()
     }
 }
 
-impl Byteboard {
-    fn valid_castling(&self, mv: CastlingMove) -> Validity {
-        Validity::ProbablyValid
-    }
+impl MoveValidator for Byteboard {}
 
-    fn valid_enpassant(&self, mv: EnPassantCapture) -> Validity {
-        Validity::ProbablyValid
+impl Validator<PawnMove> for Byteboard {
+    fn validate(&self, it: &PawnMove) -> Validity {
+        todo!()
     }
+}
 
-    fn valid_promotion(&self, mv: PawnPromotion) -> Validity {
-        Validity::ProbablyValid
+impl Validator<PieceMove> for Byteboard {
+    fn validate(&self, it: &PieceMove) -> Validity {
+        todo!()
     }
+}
 
-    fn valid_standard_move(&self, mv: StandardMove) -> Validity {
-        Validity::ProbablyValid
+impl Validator<CastlingMove> for Byteboard {
+    fn validate(&self, it: &CastlingMove) -> Validity {
+        todo!()
     }
 }

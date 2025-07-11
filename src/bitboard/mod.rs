@@ -1,9 +1,9 @@
 mod colorfault;
-mod enums;
-mod hash;
-mod masks;
-mod pieces;
-mod squares;
+pub mod enums;
+pub mod hash;
+pub mod masks;
+pub mod pieces;
+pub mod squares;
 
 use std::{collections::HashSet, hash::Hash, sync::LazyLock};
 
@@ -19,14 +19,15 @@ use crate::bitboard::{
     squares::Square,
 };
 
-struct BitBoard {
+#[derive(Clone, Debug)]
+pub struct BitBoard {
     metadata: Metadata,
     white: HalfBitBoard,
     black: HalfBitBoard,
 }
 
 impl BitBoard {
-    fn render(&self, board: &mut [char; 64], highlights: &mut [bool; 64]) {
+    pub fn render(&self, board: &mut [char; 64], highlights: &mut [bool; 64]) {
         if let Some((f, t)) = self.metadata.most_recent_move {
             highlights[f.index() as usize] = true;
             highlights[t.index() as usize] = true;
@@ -47,7 +48,8 @@ impl Default for BitBoard {
     }
 }
 
-struct HalfBitBoard {
+#[derive(Clone, Debug)]
+pub struct HalfBitBoard {
     kings: Kings,
     queens: Queens,
     rooks: Rooks,
@@ -70,12 +72,22 @@ impl Colorfault for HalfBitBoard {
 }
 
 impl HalfBitBoard {
-    fn render(&self, board: &mut [char; 64], color: Color) {}
+    fn render(&self, board: &mut [char; 64], color: Color) {
+        self.kings.render(board, color);
+        self.queens.render(board, color);
+        self.rooks.render(board, color);
+        self.bishops.render(board, color);
+        self.knights.render(board, color);
+        self.pawns.render(board, color);
+    }
 }
 
-struct Metadata {
+#[derive(Clone, Debug)]
+pub struct Metadata {
     hash: Option<u128>,
     turn: Color,
+    white_castling: CastlingRights,
+    black_castling: CastlingRights,
     most_recent_move: Option<(Square, Square)>,
     en_passant: Option<Square>,
 }
@@ -85,8 +97,25 @@ impl Default for Metadata {
         Self {
             hash: None,
             turn: Color::White,
+            white_castling: CastlingRights::default(),
+            black_castling: CastlingRights::default(),
             most_recent_move: None,
             en_passant: None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct CastlingRights {
+    long: bool,
+    short: bool,
+}
+
+impl Default for CastlingRights {
+    fn default() -> Self {
+        Self {
+            long: true,
+            short: true,
         }
     }
 }

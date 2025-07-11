@@ -1,8 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, btree_map::Values};
 
 use rand::{Fill, SeedableRng};
 
-use crate::bitboard::{BitBoard, HalfBitBoard, enums::Color, masks::Mask, pieces::Micropawns};
+use crate::bitboard::{
+    BitBoard, CastlingRights, HalfBitBoard, enums::Color, masks::Mask, pieces::Micropawns,
+    squares::Square,
+};
 
 pub struct MaskHasher([u128; 64]);
 
@@ -32,6 +35,8 @@ impl Fill for MaskHasher {
 pub struct BitBoardHasher {
     black_to_move: u128,
     en_passant: u128,
+    white_castling: (u128, u128),
+    black_castling: (u128, u128),
 
     kings: MaskHasher,
     queens: MaskHasher,
@@ -52,17 +57,28 @@ impl BitBoardHasher {
     }
 
     pub fn hash(&self, board: &BitBoard) -> u128 {
-        (if board.metadata.turn == Color::White {
-            0
-        } else {
-            self.black_to_move
-        }) ^ self.hash_half(&board.white)
+        self.hash_turn(board.metadata.turn)
+            ^ self.hash_half(&board.white)
             ^ !self.hash_half(&board.black)
-            ^ (if let Some(_) = board.metadata.en_passant {
-                self.en_passant
-            } else {
-                0
-            })
+            ^ self.hash_en_passant(board.metadata.en_passant)
+            ^ self.hash_castle(board.metadata.white_castling, Color::White)
+            ^ self.hash_castle(board.metadata.black_castling, Color::Black)
+    }
+
+    pub fn hash_turn(&self, turn: Color) -> u128 {
+        if turn == Color::Black {
+            self.black_to_move
+        } else {
+            0
+        }
+    }
+
+    pub fn hash_en_passant(&self, passant: Option<Square>) -> u128 {
+        if let Some(_) = passant {
+            self.en_passant
+        } else {
+            0
+        }
     }
 
     pub fn hash_half(&self, board: &HalfBitBoard) -> u128 {
@@ -73,12 +89,23 @@ impl BitBoardHasher {
             ^ self.knights.hash(board.knights.as_mask())
             ^ self.pawns.hash(board.pawns.as_mask())
     }
+
+    pub fn hash_castle(&self, castling: CastlingRights, side: Color) -> u128 {
+        let values = match side {
+            Color::White => self.white_castling,
+            Color::Black => self.black_castling,
+        };
+
+        (if castling.long { values.0 } else { 0 }) ^ (if castling.short { values.1 } else { 0 })
+    }
 }
 
 impl Fill for BitBoardHasher {
     fn fill<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
         self.black_to_move = rng.random();
         self.en_passant = rng.random();
+        self.white_castling = (rng.random(), rng.random());
+        self.black_castling = (rng.random(), rng.random());
         self.kings.fill(rng);
         self.queens.fill(rng);
         self.rooks.fill(rng);

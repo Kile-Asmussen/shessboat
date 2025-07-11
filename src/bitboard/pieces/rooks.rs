@@ -17,6 +17,17 @@ impl Rooks {
     pub fn as_mask(&self) -> Mask {
         self.0
     }
+
+    pub fn render(&self, board: &mut [char; 64], color: Color) {
+        let piece = match color {
+            Color::White => '\u{2656}',
+            Color::Black => '\u{265C}',
+        };
+
+        for sq in self.0.iter() {
+            board[sq.index() as usize] = piece
+        }
+    }
 }
 
 impl Colorfault for Rooks {

@@ -1,8 +1,8 @@
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not};
 
 use crate::bitboard::{
-    squares::Square,
     enums::{Color, Piece, Shade},
+    squares::Square,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -19,7 +19,7 @@ impl Mask {
     }
 
     pub const fn first(&self) -> Option<Square> {
-        Square::index(self.0.trailing_zeros())
+        Square::new(self.0.trailing_zeros())
     }
 
     pub const fn new(x: u64) -> Self {

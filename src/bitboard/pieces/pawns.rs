@@ -1,11 +1,26 @@
-use crate::bitboard::{colorfault::Colorfault, masks::Mask, pieces::Millipawns};
+use crate::bitboard::{
+    colorfault::Colorfault,
+    enums::{Color, Piece},
+    masks::Mask,
+    pieces::Micropawns,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(transparent)]
 pub struct Pawns(Mask);
 
 impl Pawns {
-    pub fn materiel(&self) -> Millipawns {
-        Millipawns(self.0.occupied() as usize * 1000)
+    pub fn materiel(&self) -> Micropawns {
+        Micropawns(self.0.occupied() as usize * 1_000_000)
+    }
+
+    pub fn as_mask(&self) -> Mask {
+        self.0
+    }
+}
+
+impl Colorfault for Pawns {
+    fn colorfault(c: Color) -> Self {
+        Self(Piece::Pawn.as_mask() & c.as_mask())
     }
 }

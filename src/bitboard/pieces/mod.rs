@@ -7,4 +7,4 @@ pub mod rooks;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(transparent)]
-pub struct Millipawns(pub usize);
+pub struct Micropawns(pub usize);

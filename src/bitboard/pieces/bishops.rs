@@ -2,7 +2,7 @@ use crate::bitboard::{
     colorfault::Colorfault,
     enums::{Color, Piece},
     masks::Mask,
-    pieces::Millipawns,
+    pieces::Micropawns,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -10,8 +10,12 @@ use crate::bitboard::{
 pub struct Bishops(Mask);
 
 impl Bishops {
-    pub fn materiel(&self) -> Millipawns {
-        Millipawns(self.0.occupied() as usize * 3333)
+    pub fn materiel(&self) -> Micropawns {
+        Micropawns(self.0.occupied() as usize * 3_333_333)
+    }
+
+    pub fn as_mask(&self) -> Mask {
+        self.0
     }
 }
 

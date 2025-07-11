@@ -1,6 +1,9 @@
 use std::num::NonZeroU64;
 
-use crate::bitboard::masks::Mask;
+use crate::bitboard::{
+    enums::{File, Rank},
+    masks::Mask,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(transparent)]
@@ -11,7 +14,7 @@ impl Square {
         Mask::new(self.0.get())
     }
 
-    pub const fn index(ix: u32) -> Option<Self> {
+    pub const fn new(ix: u32) -> Option<Self> {
         let Some(n) = 1u64.checked_shl(ix) else {
             return None;
         };
@@ -19,5 +22,16 @@ impl Square {
             return None;
         };
         Some(Square(n))
+    }
+
+    pub const fn index(&self) -> u32 {
+        self.0.trailing_zeros()
+    }
+
+    pub const fn rank_and_file(&self) -> (Rank, File) {
+        (
+            Rank::rank(self.index() % 8).unwrap(),
+            File::file(self.index() / 8).unwrap(),
+        )
     }
 }

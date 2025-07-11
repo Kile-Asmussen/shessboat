@@ -44,6 +44,15 @@ impl Rank {
     pub const fn as_mask(&self) -> Mask {
         Mask::new(*self as u64)
     }
+
+    pub const fn rank(e: u32) -> Option<Self> {
+        use Rank::*;
+        if e > 7 {
+            None
+        } else {
+            Some([_1, _2, _3, _4, _5, _6, _7, _8][e as usize])
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -63,6 +72,15 @@ impl File {
     pub const fn as_mask(&self) -> Mask {
         Mask::new(*self as u64)
     }
+
+    pub const fn file(e: u32) -> Option<Self> {
+        use File::*;
+        if e > 7 {
+            None
+        } else {
+            Some([A, B, C, D, E, F, G, H][e as usize])
+        }
+    }
 }
 
 #[rustfmt::skip]
@@ -81,4 +99,23 @@ impl Piece {
     pub const fn as_mask(&self) -> Mask {
         Mask::new(*self as u64)
     }
+}
+
+#[rustfmt::skip]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u64)]
+pub enum Orthogonals {
+    North = Mask::board([0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF]).as_u64(),
+    East  = Mask::board([0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0]).as_u64(),
+    West  = Mask::board([0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F]).as_u64(),
+    South = Mask::board([0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00]).as_u64(),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u64)]
+pub enum Diagonals {
+    NorthEast = Mask::board([0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF]).as_u64(),
+    SouthEast = Mask::board([0xFF, 0xFE, 0xFC, 0xF8, 0xF0, 0xE0, 0xC0, 0x80]).as_u64(),
+    SouthWest = Mask::board([0xFF, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01]).as_u64(),
+    NorthWest = Mask::board([0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF]).as_u64(),
 }

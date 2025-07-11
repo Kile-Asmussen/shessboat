@@ -34,32 +34,74 @@ fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
     for rank in chessboard {
         for sq in rank.iter() {
             let piece = pieces[sq.index() as usize];
-            let fg_color = match piece {
-                '\u{2654}'..='\u{2659}' => colored::Color::White,
-                '\u{255A}'..='\u{265F}' => colored::Color::Black,
-                _ => colored::Color::Red,
+            let mut fg_color = match piece {
+                'A'..='Z' => colored::Color::TrueColor {
+                    r: 0xFF,
+                    g: 0xFF,
+                    b: 0xFF,
+                },
+                'a'..='z' => colored::Color::TrueColor {
+                    r: 0x00,
+                    g: 0x00,
+                    b: 0x00,
+                },
+                _ => colored::Color::TrueColor {
+                    r: 0xFF,
+                    g: 0x00,
+                    b: 0x00,
+                },
             };
 
             let bg_color = if highlights[sq.index() as usize] {
-                colored::Color::Red
+                colored::Color::TrueColor {
+                    r: 0xAF,
+                    g: 0x7F,
+                    b: 0x7F,
+                }
             } else {
                 if (sq.as_mask() & Shade::Light.as_mask()).any() {
-                    colored::Color::BrightGreen
+                    colored::Color::TrueColor {
+                        r: 0x9F,
+                        g: 0x9F,
+                        b: 0x9F,
+                    }
                 } else if (sq.as_mask() & Shade::Dark.as_mask()).any() {
-                    colored::Color::Green
+                    colored::Color::TrueColor {
+                        r: 0x5F,
+                        g: 0x5F,
+                        b: 0x5F,
+                    }
                 } else {
-                    colored::Color::Yellow
+                    colored::Color::TrueColor {
+                        r: 0xAF,
+                        g: 0xAF,
+                        b: 0x7F,
+                    }
                 }
             };
 
             let print_char = match piece {
-                c @ '\u{2654}'..='\u{2659}' => unsafe { char::from_u32_unchecked(c as u32 + 6) },
-                c => c,
+                'K' | 'k' => '\u{265A}',
+                'Q' | 'q' => '\u{265B}',
+                'R' | 'r' => '\u{265C}',
+                'B' | 'b' => '\u{265D}',
+                'N' | 'n' => '\u{265E}',
+                'P' | 'p' => '\u{265F}',
+                c => {
+                    fg_color = colored::Color::TrueColor {
+                        r: 0xFF,
+                        g: 0,
+                        b: 0,
+                    };
+                    c
+                }
             };
 
             print!(
                 "{}",
-                print_char.to_string().color(fg_color).on_color(bg_color)
+                format!(" {} ", print_char)
+                    .color(fg_color)
+                    .on_color(bg_color)
             )
         }
         println!();

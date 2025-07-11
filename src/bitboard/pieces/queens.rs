@@ -20,8 +20,8 @@ impl Queens {
 
     pub fn render(&self, board: &mut [char; 64], color: Color) {
         let piece = match color {
-            Color::White => '\u{2655}',
-            Color::Black => '\u{265B}',
+            Color::White => 'Q',
+            Color::Black => 'q',
         };
 
         for sq in self.0.iter() {

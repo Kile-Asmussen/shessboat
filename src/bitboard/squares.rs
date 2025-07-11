@@ -1,13 +1,19 @@
-use std::num::NonZeroU64;
+use std::{fmt::Debug, num::NonZeroU64};
 
 use crate::bitboard::{
     enums::{File, Rank},
     masks::Mask,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Square(NonZeroU64);
+
+impl Debug for Square {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Square::new({})", self.0.trailing_zeros())
+    }
+}
 
 impl Square {
     pub const fn as_mask(&self) -> Mask {

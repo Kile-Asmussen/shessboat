@@ -21,8 +21,8 @@ impl Kings {
 
     pub fn render(&self, board: &mut [char; 64], color: Color) {
         let piece = match color {
-            Color::White => '\u{2654}',
-            Color::Black => '\u{265A}',
+            Color::White => 'K',
+            Color::Black => 'k',
         };
 
         for sq in self.0.iter() {

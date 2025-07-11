@@ -1,13 +1,22 @@
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not};
+use std::{
+    fmt::Debug,
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not},
+};
 
 use crate::bitboard::{
     enums::{Color, Piece, Shade},
     squares::Square,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Mask(u64);
+
+impl Debug for Mask {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Mask({:#064b})", self.0)
+    }
+}
 
 impl Mask {
     pub const fn any(&self) -> bool {
@@ -66,13 +75,13 @@ impl BitAnd for Mask {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+        Self(self.0 & rhs.0)
     }
 }
 
 impl BitAndAssign for Mask {
     fn bitand_assign(&mut self, rhs: Self) {
-        self.0 |= rhs.0
+        self.0 &= rhs.0
     }
 }
 
@@ -93,7 +102,24 @@ impl Iterator for SquareIter {
         let Some(res) = self.0.first() else {
             return None;
         };
-        self.0 |= !res.as_mask();
+        self.0 &= !res.as_mask();
         Some(res)
     }
+}
+
+#[test]
+fn test_mask_first_and_iteration() {
+    assert_eq!(Mask::new(0x1).first(), Square::new(0));
+    assert_eq!(Mask::new(0x2).first(), Square::new(1));
+    assert_eq!(Mask::new(0).first(), None);
+    assert_eq!(Mask::new(0x3).first(), Square::new(0));
+    assert_eq!(Mask::new(1 << 63).first(), Square::new(63));
+
+    let mut iter = Mask::new(0x10F).iter();
+    assert_eq!(iter.next(), Square::new(0));
+    assert_eq!(iter.next(), Square::new(1));
+    assert_eq!(iter.next(), Square::new(2));
+    assert_eq!(iter.next(), Square::new(3));
+    assert_eq!(iter.next(), Square::new(8));
+    assert_eq!(iter.next(), None);
 }

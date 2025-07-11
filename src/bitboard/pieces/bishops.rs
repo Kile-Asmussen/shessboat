@@ -20,8 +20,8 @@ impl Bishops {
 
     pub fn render(&self, board: &mut [char; 64], color: Color) {
         let piece = match color {
-            Color::White => '\u{2657}',
-            Color::Black => '\u{265D}',
+            Color::White => 'B',
+            Color::Black => 'b',
         };
 
         for sq in self.0.iter() {

@@ -20,8 +20,8 @@ impl Pawns {
 
     pub fn render(&self, board: &mut [char; 64], color: Color) {
         let piece = match color {
-            Color::White => '\u{2659}',
-            Color::Black => '\u{265F}',
+            Color::White => 'P',
+            Color::Black => 'p',
         };
 
         for sq in self.0.iter() {

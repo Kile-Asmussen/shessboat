@@ -20,8 +20,8 @@ impl Knights {
 
     pub fn render(&self, board: &mut [char; 64], color: Color) {
         let piece = match color {
-            Color::White => '\u{2658}',
-            Color::Black => '\u{265E}',
+            Color::White => 'N',
+            Color::Black => 'n',
         };
 
         for sq in self.0.iter() {

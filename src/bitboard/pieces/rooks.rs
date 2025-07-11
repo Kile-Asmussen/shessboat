@@ -20,8 +20,8 @@ impl Rooks {
 
     pub fn render(&self, board: &mut [char; 64], color: Color) {
         let piece = match color {
-            Color::White => '\u{2656}',
-            Color::Black => '\u{265C}',
+            Color::White => 'R',
+            Color::Black => 'r',
         };
 
         for sq in self.0.iter() {

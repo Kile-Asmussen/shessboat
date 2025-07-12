@@ -1,8 +1,10 @@
 use crate::bitboard::{
     colorfault::Colorfault,
-    enums::{Color, Piece},
+    enums::{Cardinals, Color, Piece},
     masks::Mask,
+    moves::MoveDb,
     pieces::Micropawns,
+    squares::Square,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -26,6 +28,40 @@ impl Knights {
 
         for sq in self.0.iter() {
             board[sq.index() as usize] = piece
+        }
+    }
+
+    pub const MOVE_DB: MoveDb = MoveDb::new(Self::knight_moves(0, [Mask::new(0); 64]));
+
+    const fn knight_moves(n: u32, mut res: [Mask; 64]) -> [Mask; 64] {
+        if n >= 64 {
+            return res;
+        }
+        res[n as usize] = Self::knight_move(n);
+        Self::knight_moves(n + 1, res)
+    }
+
+    const fn knight_move(ix: u32) -> Mask {
+        use Cardinals::*;
+
+        let sq = Square::new(ix).unwrap();
+
+        return Mask::new(
+            x(sq.goes(&[North, NorthEast]))
+                & x(sq.goes(&[North, NorthWest]))
+                & x(sq.goes(&[East, SouthEast]))
+                & x(sq.goes(&[East, NorthEast]))
+                & x(sq.goes(&[South, SouthWest]))
+                & x(sq.goes(&[South, SouthEast]))
+                & x(sq.goes(&[West, NorthWest]))
+                & x(sq.goes(&[West, SouthWest])),
+        );
+
+        const fn x(sq: Option<Square>) -> u64 {
+            let Some(sq) = sq else {
+                return 0u64;
+            };
+            sq.as_mask().as_u64()
         }
     }
 }

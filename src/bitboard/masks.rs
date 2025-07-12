@@ -19,6 +19,14 @@ impl Debug for Mask {
 }
 
 impl Mask {
+    pub const fn new(x: u64) -> Self {
+        Mask(x)
+    }
+
+    pub const fn as_u64(&self) -> u64 {
+        self.0
+    }
+
     pub const fn any(&self) -> bool {
         self.0 != 0
     }
@@ -31,12 +39,11 @@ impl Mask {
         Square::new(self.0.trailing_zeros())
     }
 
-    pub const fn new(x: u64) -> Self {
-        Mask(x)
-    }
-
-    pub const fn as_u64(&self) -> u64 {
-        self.0
+    pub const fn sans_first(&self) -> Self {
+        let Some(sq) = self.first() else {
+            return *self;
+        };
+        Self::new(self.0 & !sq.as_mask().as_u64())
     }
 
     pub const fn board(x: [u8; 8]) -> Mask {
@@ -54,6 +61,12 @@ impl Mask {
 
     pub fn iter(&self) -> SquareIter {
         SquareIter(*self)
+    }
+
+    pub fn render(&self, highlight: &mut [bool; 64]) {
+        for sq in self.iter() {
+            highlight[sq.index() as usize] = true;
+        }
     }
 }
 
@@ -102,7 +115,7 @@ impl Iterator for SquareIter {
         let Some(res) = self.0.first() else {
             return None;
         };
-        self.0 &= !res.as_mask();
+        self.0 = self.0.sans_first();
         Some(res)
     }
 }

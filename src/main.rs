@@ -35,7 +35,7 @@ fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
         for sq in rank.iter() {
             let piece = pieces[sq.index() as usize];
             let mut fg_color = match piece {
-                'A'..='Z' => colored::Color::TrueColor {
+                'A'..='Z' | ' ' => colored::Color::TrueColor {
                     r: 0xFF,
                     g: 0xFF,
                     b: 0xFF,
@@ -45,11 +45,7 @@ fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
                     g: 0x00,
                     b: 0x00,
                 },
-                _ => colored::Color::TrueColor {
-                    r: 0xFF,
-                    g: 0x00,
-                    b: 0x00,
-                },
+                _ => panic!(),
             };
 
             let bg_color = if highlights[sq.index() as usize] {
@@ -72,11 +68,7 @@ fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
                         b: 0x5F,
                     }
                 } else {
-                    colored::Color::TrueColor {
-                        r: 0xAF,
-                        g: 0xAF,
-                        b: 0x7F,
-                    }
+                    panic!()
                 }
             };
 

@@ -57,7 +57,7 @@ impl BitBoardHasher {
     }
 
     pub fn hash(&self, board: &BitBoard) -> u128 {
-        self.hash_turn(board.metadata.turn)
+        self.hash_to_move(board.metadata.to_move)
             ^ self.hash_half(&board.white)
             ^ !self.hash_half(&board.black)
             ^ self.hash_en_passant(board.metadata.en_passant)
@@ -65,7 +65,7 @@ impl BitBoardHasher {
             ^ self.hash_castle(board.metadata.black_castling, Color::Black)
     }
 
-    pub fn hash_turn(&self, turn: Color) -> u128 {
+    pub fn hash_to_move(&self, turn: Color) -> u128 {
         if turn == Color::Black {
             self.black_to_move
         } else {

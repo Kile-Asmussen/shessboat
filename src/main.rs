@@ -3,8 +3,10 @@
 use colored::Colorize;
 
 use crate::bitboard::{
-    enums::{Rank, Shade},
+    enums::{File, Rank, Shade},
     masks::Mask,
+    pieces::knights::Knights,
+    squares::Square,
 };
 
 pub mod bitboard;
@@ -17,22 +19,32 @@ fn main() {
 
     board.render(&mut print, &mut highlight);
 
+    let mask = Knights::moves_from(Square::at(File::E, Rank::_5));
+    println!("{:?}", mask);
+
+    mask.render(&mut highlight);
+
     print_chessboard(&print, &highlight);
+}
+
+#[test]
+fn sizeof_option_i32() {
+    assert_eq!(std::mem::size_of::<Option<i32>>(), 8);
 }
 
 fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
     let chessboard = [
-        Rank::_8.as_mask(),
-        Rank::_7.as_mask(),
-        Rank::_6.as_mask(),
-        Rank::_5.as_mask(),
-        Rank::_4.as_mask(),
-        Rank::_3.as_mask(),
-        Rank::_2.as_mask(),
-        Rank::_1.as_mask(),
+        Rank::_8,
+        Rank::_7,
+        Rank::_6,
+        Rank::_5,
+        Rank::_4,
+        Rank::_3,
+        Rank::_2,
+        Rank::_1,
     ];
     for rank in chessboard {
-        for sq in rank.iter() {
+        for sq in rank.as_mask().iter() {
             let piece = pieces[sq.index() as usize];
             let mut fg_color = match piece {
                 'A'..='Z' | ' ' => colored::Color::TrueColor {
@@ -96,6 +108,10 @@ fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
                     .on_color(bg_color)
             )
         }
-        println!();
+        println!(" {}", rank.as_rank() + 1);
     }
+    for c in "abcdefgh".chars() {
+        print!(" {} ", c);
+    }
+    println!();
 }

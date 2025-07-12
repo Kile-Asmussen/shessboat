@@ -1,33 +1,31 @@
 use std::{fmt::Debug, num::NonZeroU64};
 
 use crate::bitboard::{
-    enums::{Cardinals, File, Orthogonals, Rank},
+    enums::{Dir, File, Rank},
     masks::Mask,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct Square(NonZeroU64);
+pub struct Square(i32);
 
 impl Debug for Square {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Square::new({})", self.0.trailing_zeros())
+        let (file, rank) = self.algebraic();
+        write!(f, "Square::at({:?}, {:?})", file, rank)
     }
 }
 
 impl Square {
     pub const fn as_mask(&self) -> Mask {
-        Mask::new(self.0.get())
+        Mask::new(1 << self.0)
     }
 
-    pub const fn new(ix: u32) -> Option<Self> {
-        let Some(n) = 1u64.checked_shl(ix) else {
-            return None;
-        };
-        let Some(n) = NonZeroU64::new(n) else {
-            return None;
-        };
-        Some(Square(n))
+    pub const fn new(ix: i32) -> Option<Self> {
+        match ix {
+            0..=63 => Some(Square(ix)),
+            _ => None,
+        }
     }
 
     pub const fn from_mask(mask: Mask) -> Option<Self> {
@@ -38,65 +36,70 @@ impl Square {
         }
     }
 
-    pub const fn index(&self) -> u32 {
-        self.0.trailing_zeros()
+    pub const fn index(&self) -> i32 {
+        self.0 as i32
     }
 
-    pub const fn rank_and_file(&self) -> (Rank, File) {
+    pub const fn algebraic(&self) -> (File, Rank) {
         (
-            Rank::rank(self.index() % 8).unwrap(),
             File::file(self.index() / 8).unwrap(),
+            Rank::rank(self.index() % 8).unwrap(),
         )
     }
 
-    pub const fn go(&self, dir: Cardinals) -> Option<Self> {
-        let (rank, file) = self.rank_and_file();
-        let (rank, file) = (rank.as_rank(), file.as_file());
-        let (rank, file) = (rank as i32, file as i32);
-
-        #[rustfmt::skip]
-        let (rank, file) = match dir {
-            Cardinals::North     => (rank + 1, file),
-            Cardinals::NorthEast => (rank + 1, file + 1),
-            Cardinals::East      => (rank,     file + 1),
-            Cardinals::SouthEast => (rank - 1, file + 1),
-            Cardinals::South     => (rank - 1, file),
-            Cardinals::SouthWest => (rank - 1, file - 1),
-            Cardinals::West      => (rank,     file - 1),
-            Cardinals::NorthWest => (rank + 1, file - 1),
-        };
-
-        if rank < 0 || file < 0 {
-            return None;
-        }
-
-        let (rank, file) = (rank as u32, file as u32);
-
-        let (Some(rank), Some(file)) = (Rank::rank(rank), File::file(file)) else {
-            return None;
-        };
-
-        Square::from_mask(Mask::new(rank.as_mask().as_u64() & file.as_mask().as_u64()))
+    pub const fn at(file: File, rank: Rank) -> Self {
+        Square::from_mask(Mask::new(file.as_mask().as_u64() & rank.as_mask().as_u64())).unwrap()
     }
 
-    pub const fn goes(&self, dirs: &[Cardinals]) -> Option<Self> {
-        return so_it_goes(*self, 0, dirs);
+    pub const fn go(&self, dir: Dir) -> Option<Self> {
+        let file = match self.0 % 8 + dir as i32 % 8 {
+            f @ 0..=7 => f,
+            _ => return None,
+        };
+        let rank = match self.0 / 8 + dir as i32 / 8 {
+            r @ 0..=7 => r,
+            _ => return None,
+        };
+        Self::new(rank * 8 + file)
+    }
 
-        const fn so_it_goes(it: Square, n: usize, dirs: &[Cardinals]) -> Option<Square> {
-            if n >= dirs.len() {
-                return Some(it);
-            }
+    pub const fn goes(&self, dirs: &[Dir]) -> Option<Self> {
+        let mut n = 0;
+        let mut res = Some(*self);
 
-            let dir = dirs[n];
-
-            let Some(res) = it.go(dir) else {
+        while n < dirs.len() {
+            let Some(sq) = res else {
                 return None;
             };
-            so_it_goes(res, n + 1, dirs)
+            res = sq.go(dirs[n]);
+            n += 1;
         }
+
+        res
     }
 
     pub fn invariant(&self) {
         assert_eq!(self.as_mask().occupied(), 1);
     }
+}
+
+#[test]
+fn moves() {
+    use Dir::*;
+    use File::*;
+    use Rank::*;
+    let at = Square::at;
+
+    assert_eq!(
+        at(A, _8).go(South),
+        Some(at(A, _7)),
+        "west form a8 should be a7"
+    );
+    assert_eq!(at(A, _8).go(North), None, "no north from a8");
+    assert_eq!(
+        at(A, _8).go(East),
+        Some(at(B, _8)),
+        "east from a8 should be b8"
+    );
+    assert_eq!(at(A, _8).go(West), None, "no west from a8");
 }

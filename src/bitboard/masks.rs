@@ -36,7 +36,7 @@ impl Mask {
     }
 
     pub const fn first(&self) -> Option<Square> {
-        Square::new(self.0.trailing_zeros())
+        Square::new(self.0.trailing_zeros() as i32)
     }
 
     pub const fn sans_first(&self) -> Self {
@@ -44,6 +44,10 @@ impl Mask {
             return *self;
         };
         Self::new(self.0 & !sq.as_mask().as_u64())
+    }
+
+    pub const fn contains(&self, sq: Square) -> bool {
+        self.as_u64() & sq.as_mask().as_u64() != 0
     }
 
     pub const fn board(x: [u8; 8]) -> Mask {

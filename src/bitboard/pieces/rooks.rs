@@ -11,11 +11,11 @@ use crate::bitboard::{
 pub struct Rooks(Mask);
 
 impl Rooks {
-    pub fn materiel(&self) -> Micropawns {
-        Micropawns(self.0.occupied() as usize * 5_000_000)
+    pub const fn materiel(&self) -> Micropawns {
+        self.0.occupied() as usize * 5_000_000
     }
 
-    pub fn as_mask(&self) -> Mask {
+    pub const fn as_mask(&self) -> Mask {
         self.0
     }
 

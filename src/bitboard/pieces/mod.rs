@@ -5,6 +5,4 @@ pub mod pawns;
 pub mod queens;
 pub mod rooks;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[repr(transparent)]
-pub struct Micropawns(pub usize);
+pub type Micropawns = usize;

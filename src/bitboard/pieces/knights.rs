@@ -15,7 +15,7 @@ pub struct Knights(Mask);
 
 impl Knights {
     pub fn materiel(&self) -> Micropawns {
-        Micropawns(self.0.occupied() as usize * 3_250_000)
+        self.0.occupied() as usize * 3_250_000
     }
 
     pub fn as_mask(&self) -> Mask {

@@ -11,7 +11,7 @@ pub struct Queens(Mask);
 
 impl Queens {
     pub fn materiel(&self) -> Micropawns {
-        Micropawns(self.0.occupied() as usize * 9_000_000)
+        self.0.occupied() as usize * 9_000_000
     }
 
     pub fn as_mask(&self) -> Mask {

@@ -11,7 +11,7 @@ pub struct Bishops(Mask);
 
 impl Bishops {
     pub fn materiel(&self) -> Micropawns {
-        Micropawns(self.0.occupied() as usize * 3_333_333)
+        self.0.occupied() as usize * 3_333_333
     }
 
     pub fn as_mask(&self) -> Mask {

@@ -1,7 +1,8 @@
 use crate::bitboard::{
     colorfault::Colorfault,
-    enums::{Color, Piece},
+    enums::{Color, Dir, Piece},
     masks::Mask,
+    movedbs::MoveDb,
     squares::Square,
 };
 
@@ -28,6 +29,40 @@ impl Kings {
 
         for sq in self.0.as_mask().iter() {
             board[sq.index() as usize] = piece
+        }
+    }
+
+    const fn build_move_db() -> MoveDb<Mask> {
+        let mut n = 0;
+        let mut res = [Mask::new(0); 64];
+
+        while n < 64 {
+            res[n] = Self::moves_from(Square::new(n as i8).unwrap());
+
+            n += 1;
+        }
+
+        MoveDb::new(res)
+    }
+
+    pub const fn moves_from(sq: Square) -> Mask {
+        use Dir::*;
+        return Mask::new(
+            x(sq.go(North))
+                | x(sq.go(East))
+                | x(sq.go(South))
+                | x(sq.go(West))
+                | x(sq.goes(&[North, East]))
+                | x(sq.goes(&[South, East]))
+                | x(sq.goes(&[South, West]))
+                | x(sq.goes(&[North, West])),
+        );
+
+        const fn x(sq: Option<Square>) -> u64 {
+            let Some(sq) = sq else {
+                return 0u64;
+            };
+            sq.as_mask().as_u64()
         }
     }
 }

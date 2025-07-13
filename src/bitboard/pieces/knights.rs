@@ -4,7 +4,7 @@ use crate::bitboard::{
     colorfault::Colorfault,
     enums::{Color, Dir, File, Piece, Rank},
     masks::Mask,
-    moves::MoveDb,
+    movedbs::MoveDb,
     pieces::Micropawns,
     squares::Square,
 };
@@ -33,40 +33,40 @@ impl Knights {
         }
     }
 
-    pub const MOVE_DB: MoveDb<Mask> = MoveDb::new(Self::knight_moves());
+    pub const MOVE_DB: MoveDb<Mask> = Self::build_move_db();
 
-    const fn knight_moves() -> [Mask; 64] {
-        let mut n = 0i32;
+    const fn build_move_db() -> MoveDb<Mask> {
+        let mut n = 0;
         let mut res = [Mask::new(0); 64];
 
         while n < 64 {
-            res[n as usize] = Self::moves_from(Square::new(n).unwrap());
+            res[n] = Self::moves_from(Square::new(n as i8).unwrap());
 
             n += 1;
         }
 
-        res
+        MoveDb::new(res)
     }
 
     pub const fn moves_from(sq: Square) -> Mask {
         use Dir::*;
         return Mask::new(
-            Self::x(sq.goes(&[North, North, East]))
-                | Self::x(sq.goes(&[North, North, West]))
-                | Self::x(sq.goes(&[East, East, South]))
-                | Self::x(sq.goes(&[East, East, North]))
-                | Self::x(sq.goes(&[South, South, West]))
-                | Self::x(sq.goes(&[South, South, East]))
-                | Self::x(sq.goes(&[West, West, North]))
-                | Self::x(sq.goes(&[West, West, South])),
+            x(sq.goes(&[North, North, East]))
+                | x(sq.goes(&[North, North, West]))
+                | x(sq.goes(&[East, East, South]))
+                | x(sq.goes(&[East, East, North]))
+                | x(sq.goes(&[South, South, West]))
+                | x(sq.goes(&[South, South, East]))
+                | x(sq.goes(&[West, West, North]))
+                | x(sq.goes(&[West, West, South])),
         );
-    }
 
-    const fn x(sq: Option<Square>) -> u64 {
-        let Some(sq) = sq else {
-            return 0u64;
-        };
-        sq.as_mask().as_u64()
+        const fn x(sq: Option<Square>) -> u64 {
+            let Some(sq) = sq else {
+                return 0u64;
+            };
+            sq.as_mask().as_u64()
+        }
     }
 }
 
@@ -77,12 +77,11 @@ impl Colorfault for Knights {
 }
 
 #[test]
-fn move_db() {
+fn knights_move_db() {
     use Dir::*;
     use File::*;
     use Rank::*;
     let at = Square::at;
-    let x = Knights::x;
 
     assert_eq!(at(A, _8).goes(&[South, South, East]), Some(at(B, _6)));
 
@@ -94,7 +93,7 @@ fn move_db() {
         );
     }
 
-    assert!(Knights::moves_from(at(D, _4)).contains(at(B, _3))); 
+    assert!(Knights::moves_from(at(D, _4)).contains(at(B, _3)));
 
     let move_db = Knights::MOVE_DB.at(Square::at(D, _4));
 

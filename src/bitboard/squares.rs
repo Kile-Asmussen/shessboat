@@ -1,4 +1,7 @@
-use std::{fmt::Debug, num::NonZeroU64};
+use std::{
+    fmt::{Debug, Display},
+    num::NonZeroU64,
+};
 
 use crate::bitboard::{
     enums::{Dir, File, Rank},
@@ -7,12 +10,19 @@ use crate::bitboard::{
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct Square(i32);
+pub struct Square(i8);
 
 impl Debug for Square {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (file, rank) = self.algebraic();
-        write!(f, "Square::at({:?}, {:?})", file, rank)
+        write!(f, "Square::at(File::{:?}, Rank::{:?})", file, rank)
+    }
+}
+
+impl Display for Square {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (fi, ra) = self.algebraic();
+        write!(f, "{}{}", fi.as_char(), ra.as_char())
     }
 }
 
@@ -21,9 +31,9 @@ impl Square {
         Mask::new(1 << self.0)
     }
 
-    pub const fn new(ix: i32) -> Option<Self> {
+    pub const fn new(ix: i8) -> Option<Self> {
         match ix {
-            0..=63 => Some(Square(ix)),
+            0..=63 => Some(Square(ix as i8)),
             _ => None,
         }
     }
@@ -36,8 +46,8 @@ impl Square {
         }
     }
 
-    pub const fn index(&self) -> i32 {
-        self.0 as i32
+    pub const fn index(&self) -> i8 {
+        self.0
     }
 
     pub const fn algebraic(&self) -> (File, Rank) {
@@ -52,15 +62,16 @@ impl Square {
     }
 
     pub const fn go(&self, dir: Dir) -> Option<Self> {
-        let file = match self.0 % 8 + dir as i32 % 8 {
+        let dir = dir.as_offset();
+        let file = match self.0 % 8 + dir % 8 {
             f @ 0..=7 => f,
             _ => return None,
         };
-        let rank = match self.0 / 8 + dir as i32 / 8 {
+        let rank = match self.0 / 8 + dir / 8 {
             r @ 0..=7 => r,
             _ => return None,
         };
-        Self::new(rank * 8 + file)
+        Some(Self(rank * 8 + file))
     }
 
     pub const fn goes(&self, dirs: &[Dir]) -> Option<Self> {

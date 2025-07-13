@@ -36,7 +36,7 @@ impl Mask {
     }
 
     pub const fn first(&self) -> Option<Square> {
-        Square::new(self.0.trailing_zeros() as i32)
+        Square::new(self.0.trailing_zeros() as i8)
     }
 
     pub const fn sans_first(&self) -> Self {
@@ -51,7 +51,7 @@ impl Mask {
     }
 
     pub const fn board(x: [u8; 8]) -> Mask {
-        Mask::new(u64::from_le_bytes([
+        Mask::new(u64::from_be_bytes([
             x[0].reverse_bits(),
             x[1].reverse_bits(),
             x[2].reverse_bits(),

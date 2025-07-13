@@ -32,6 +32,8 @@ impl Kings {
         }
     }
 
+    const MOVE_DB: MoveDb<Mask> = Self::build_move_db();
+
     const fn build_move_db() -> MoveDb<Mask> {
         let mut n = 0;
         let mut res = [Mask::new(0); 64];

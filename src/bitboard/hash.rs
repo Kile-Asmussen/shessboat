@@ -3,8 +3,8 @@ use std::collections::{HashMap, btree_map::Values};
 use rand::{Fill, SeedableRng};
 
 use crate::bitboard::{
-    BitBoard, CastlingRights, HalfBitBoard, enums::Color, masks::Mask, pieces::Micropawns,
-    squares::Square,
+    BitBoard, CastlingRights, HalfBitBoard, enums::Color, masks::Mask, moves::ValidMove,
+    pieces::Micropawns, squares::Square,
 };
 
 pub struct MaskHasher([u128; 64]);
@@ -60,7 +60,7 @@ impl BitBoardHasher {
         self.hash_to_move(board.metadata.to_move)
             ^ self.hash_half(&board.white)
             ^ !self.hash_half(&board.black)
-            ^ self.hash_en_passant(board.metadata.en_passant)
+            ^ self.hash_en_passant(board.metadata.most_recent_move.as_ref())
             ^ self.hash_castle(board.metadata.white_castling, Color::White)
             ^ self.hash_castle(board.metadata.black_castling, Color::Black)
     }
@@ -73,12 +73,14 @@ impl BitBoardHasher {
         }
     }
 
-    pub fn hash_en_passant(&self, passant: Option<Square>) -> u128 {
-        if let Some(_) = passant {
-            self.en_passant
-        } else {
-            0
-        }
+    pub fn hash_en_passant(&self, valid_move: Option<&ValidMove>) -> u128 {
+        let Some(m) = valid_move else {
+            return 0;
+        };
+        let Some(_) = m.en_passant() else {
+            return 0;
+        };
+        return self.en_passant;
     }
 
     pub fn hash_half(&self, board: &HalfBitBoard) -> u128 {
@@ -91,12 +93,12 @@ impl BitBoardHasher {
     }
 
     pub fn hash_castle(&self, castling: CastlingRights, side: Color) -> u128 {
-        let values = match side {
+        let vals = match side {
             Color::White => self.white_castling,
             Color::Black => self.black_castling,
         };
 
-        (if castling.long { values.0 } else { 0 }) ^ (if castling.short { values.1 } else { 0 })
+        (if castling.ooo() { vals.0 } else { 0 }) ^ (if castling.oo() { vals.1 } else { 0 })
     }
 }
 

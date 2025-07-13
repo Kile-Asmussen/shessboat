@@ -3,6 +3,7 @@ pub mod enums;
 pub mod hash;
 pub mod masks;
 pub mod movedbs;
+pub mod moves;
 pub mod pieces;
 pub mod squares;
 
@@ -12,8 +13,10 @@ use enums::Color;
 
 use crate::bitboard::{
     colorfault::Colorfault,
+    enums::{File, Rank},
     hash::BitBoardHasher,
     masks::Mask,
+    moves::{Move, ValidMove},
     pieces::{
         bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
         rooks::Rooks,
@@ -29,12 +32,7 @@ pub struct BitBoard {
 }
 
 impl BitBoard {
-    pub fn render(&self, board: &mut [char; 64], highlights: &mut [bool; 64]) {
-        if let Some((f, t)) = self.metadata.most_recent_move {
-            highlights[f.index() as usize] = true;
-            highlights[t.index() as usize] = true;
-        }
-
+    pub fn render(&self, board: &mut [char; 64]) {
         self.white.render(board, Color::White);
         self.black.render(board, Color::Black);
     }
@@ -122,42 +120,54 @@ impl HalfBitBoard {
 
 #[derive(Clone, Debug)]
 pub struct Metadata {
-    hash: Option<u128>,
+    hash: u128,
     to_move: Color,
     half_turn: usize,
     change_happened_at: usize,
     white_castling: CastlingRights,
     black_castling: CastlingRights,
-    most_recent_move: Option<(Square, Square)>,
-    en_passant: Option<Square>,
+    most_recent_move: Option<ValidMove>,
 }
 
 impl Default for Metadata {
     fn default() -> Self {
         Self {
-            hash: None,
+            hash: 0,
             to_move: Color::White,
             half_turn: 1,
             change_happened_at: 0,
             white_castling: CastlingRights::default(),
             black_castling: CastlingRights::default(),
             most_recent_move: None,
-            en_passant: None,
         }
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct CastlingRights {
-    long: bool,
-    short: bool,
+    ooo: bool,
+    oo: bool,
+}
+
+impl CastlingRights {
+    pub fn new(ooo: bool, oo: bool) -> Self {
+        Self { ooo, oo }
+    }
+
+    fn ooo(&self) -> bool {
+        self.ooo
+    }
+
+    fn oo(&self) -> bool {
+        self.oo
+    }
 }
 
 impl Default for CastlingRights {
     fn default() -> Self {
         Self {
-            long: true,
-            short: true,
+            ooo: true,
+            oo: true,
         }
     }
 }

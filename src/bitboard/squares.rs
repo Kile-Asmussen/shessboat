@@ -1,6 +1,6 @@
 use std::{
     fmt::{Debug, Display},
-    num::NonZeroU64,
+    num::NonZeroI8,
 };
 
 use crate::bitboard::{
@@ -10,7 +10,7 @@ use crate::bitboard::{
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct Square(i8);
+pub struct Square(NonZeroI8);
 
 impl Debug for Square {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -28,12 +28,12 @@ impl Display for Square {
 
 impl Square {
     pub const fn as_mask(&self) -> Mask {
-        Mask::new(1 << self.0)
+        Mask::new(1 << self.index())
     }
 
     pub const fn new(ix: i8) -> Option<Self> {
         match ix {
-            0..=63 => Some(Square(ix as i8)),
+            0..=63 => Some(Square(unsafe { NonZeroI8::new_unchecked(ix + 1) })),
             _ => None,
         }
     }
@@ -47,7 +47,7 @@ impl Square {
     }
 
     pub const fn index(&self) -> i8 {
-        self.0
+        self.0.get() - 1
     }
 
     pub const fn algebraic(&self) -> (File, Rank) {
@@ -58,20 +58,21 @@ impl Square {
     }
 
     pub const fn at(file: File, rank: Rank) -> Self {
-        Square::from_mask(Mask::new(file.as_mask().as_u64() & rank.as_mask().as_u64())).unwrap()
+        Self::new(rank.as_rank() * 8 + file.as_file()).unwrap()
     }
 
     pub const fn go(&self, dir: Dir) -> Option<Self> {
+        let val = self.index();
         let dir = dir.as_offset();
-        let file = match self.0 % 8 + dir % 8 {
+        let file = match val % 8 + dir % 8 {
             f @ 0..=7 => f,
             _ => return None,
         };
-        let rank = match self.0 / 8 + dir / 8 {
+        let rank = match val / 8 + dir / 8 {
             r @ 0..=7 => r,
             _ => return None,
         };
-        Some(Self(rank * 8 + file))
+        Some(Self::new(rank * 8 + file).unwrap())
     }
 
     pub const fn goes(&self, dirs: &[Dir]) -> Option<Self> {

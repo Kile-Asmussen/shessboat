@@ -1,5 +1,6 @@
 use std::{
     fmt::Debug,
+    iter::{Product, Sum},
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not},
 };
 
@@ -19,6 +20,14 @@ impl Debug for Mask {
 }
 
 impl Mask {
+    pub const fn nil() -> Self {
+        Mask(0)
+    }
+
+    pub const fn full() -> Self {
+        Mask(u64::MAX)
+    }
+
     pub const fn new(x: u64) -> Self {
         Mask(x)
     }
@@ -107,6 +116,36 @@ impl Not for Mask {
 
     fn not(self) -> Self::Output {
         Self(!self.0)
+    }
+}
+
+impl IntoIterator for Mask {
+    type Item = Square;
+
+    type IntoIter = SquareIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl Sum for Mask {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut res = Mask::nil();
+        for m in iter {
+            res |= m;
+        }
+        res
+    }
+}
+
+impl Product for Mask {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut res = Mask::nil();
+        for m in iter {
+            res &= m;
+        }
+        res
     }
 }
 

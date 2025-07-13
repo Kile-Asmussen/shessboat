@@ -12,6 +12,12 @@ impl<T: Sized + Copy> MoveDb<T> {
     }
 }
 
+impl MoveDb<Mask> {
+    pub fn overlap(&self, mask: Mask) -> Mask {
+        mask.iter().map(|sq| self.at(sq)).sum()
+    }
+}
+
 impl<T: Sized + Copy> IntoIterator for MoveDb<T> {
     type Item = T;
 

@@ -5,7 +5,7 @@ use colored::Colorize;
 use crate::bitboard::{
     enums::{File, Rank, Shade},
     masks::Mask,
-    pieces::knights::Knights,
+    pieces::{kings::Kings, knights::Knights},
     squares::Square,
 };
 
@@ -17,10 +17,9 @@ fn main() {
     let mut print = [' '; 64];
     let mut highlight = [false; 64];
 
-    board.render(&mut print, &mut highlight);
+    board.render(&mut print);
 
-    let mask = Knights::moves_from(Square::at(File::E, Rank::_5));
-    println!("{:?}", mask);
+    let mask = Kings::moves_from(Square::at(File::E, Rank::_5));
 
     mask.render(&mut highlight);
 

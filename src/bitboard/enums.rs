@@ -109,8 +109,8 @@ impl Rank {
         }
     }
 
-    pub const fn as_rank(&self) -> i32 {
-        *self as u8 as i32
+    pub const fn as_rank(&self) -> i8 {
+        *self as u8 as i8 - 1
     }
 
     pub const fn as_char(&self) -> char {
@@ -171,8 +171,8 @@ impl File {
         }
     }
 
-    pub const fn as_file(&self) -> i32 {
-        *self as u8 as i32
+    pub const fn as_file(&self) -> i8 {
+        *self as u8 as i8 - 1
     }
 
     pub const fn as_char(&self) -> char {

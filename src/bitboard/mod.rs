@@ -12,6 +12,7 @@ use std::{collections::HashSet, hash::Hash, sync::LazyLock};
 use enums::Color;
 
 use crate::bitboard::{
+    boardmap::BoardMap,
     colorfault::Colorfault,
     enums::{File, Rank},
     hash::BitBoardHasher,
@@ -32,7 +33,7 @@ pub struct BitBoard {
 }
 
 impl BitBoard {
-    pub fn render(&self, board: &mut [char; 64]) {
+    pub fn render(&self, board: &mut BoardMap<char>) {
         self.white.render(board, Color::White);
         self.black.render(board, Color::Black);
     }
@@ -86,7 +87,7 @@ impl Colorfault for HalfBitBoard {
 }
 
 impl HalfBitBoard {
-    pub fn render(&self, board: &mut [char; 64], color: Color) {
+    pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
         self.kings.render(board, color);
         self.queens.render(board, color);
         self.rooks.render(board, color);

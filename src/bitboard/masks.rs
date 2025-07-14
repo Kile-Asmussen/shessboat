@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::bitboard::{
+    boardmap::BoardMap,
     enums::{Color, Piece, Shade},
     squares::Square,
 };
@@ -44,6 +45,16 @@ impl Mask {
         self.0.count_ones()
     }
 
+    pub const fn set(&mut self, sq: Square) -> &mut Self {
+        self.0 |= sq.as_mask().as_u64();
+        self
+    }
+
+    pub const fn unset(&mut self, sq: Square) -> &mut Self {
+        self.0 &= !sq.as_mask().as_u64();
+        self
+    }
+
     pub const fn first(&self) -> Option<Square> {
         Square::new(self.0.trailing_zeros() as i8)
     }
@@ -52,7 +63,8 @@ impl Mask {
         let Some(sq) = self.first() else {
             return *self;
         };
-        Self::new(self.0 & !sq.as_mask().as_u64())
+        let mut res = *self;
+        *res.unset(sq)
     }
 
     pub const fn contains(&self, sq: Square) -> bool {
@@ -76,9 +88,9 @@ impl Mask {
         SquareIter(*self)
     }
 
-    pub fn render(&self, highlight: &mut [bool; 64]) {
+    pub fn render(&self, highlight: &mut BoardMap<bool>) {
         for sq in self.iter() {
-            highlight[sq.index() as usize] = true;
+            highlight.set(sq, true);
         }
     }
 }

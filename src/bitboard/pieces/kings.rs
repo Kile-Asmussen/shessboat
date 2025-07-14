@@ -1,8 +1,8 @@
 use crate::bitboard::{
+    boardmap::BoardMap,
     colorfault::Colorfault,
     enums::{Color, Dir, Piece},
     masks::Mask,
-    boardmap::BoardMap,
     squares::Square,
 };
 
@@ -21,14 +21,14 @@ impl Kings {
         self.0.as_mask()
     }
 
-    pub fn render(&self, board: &mut [char; 64], color: Color) {
+    pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
         let piece = match color {
             Color::White => 'K',
             Color::Black => 'k',
         };
 
         for sq in self.0.as_mask().iter() {
-            board[sq.index() as usize] = piece
+            board.set(sq, piece);
         }
     }
 

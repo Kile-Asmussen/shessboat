@@ -22,14 +22,14 @@ impl Knights {
         self.0
     }
 
-    pub fn render(&self, board: &mut [char; 64], color: Color) {
+    pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
         let piece = match color {
             Color::White => 'N',
             Color::Black => 'n',
         };
 
         for sq in self.0.iter() {
-            board[sq.index() as usize] = piece
+            board.set(sq, piece);
         }
     }
 

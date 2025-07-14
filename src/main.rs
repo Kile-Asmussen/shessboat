@@ -3,6 +3,7 @@
 use colored::Colorize;
 
 use crate::bitboard::{
+    boardmap::BoardMap,
     enums::{File, Rank, Shade},
     masks::Mask,
     pieces::{kings::Kings, knights::Knights},
@@ -14,8 +15,8 @@ pub mod bitboard;
 fn main() {
     let board = bitboard::BitBoard::default();
 
-    let mut print = [' '; 64];
-    let mut highlight = [false; 64];
+    let mut print = BoardMap::default();
+    let mut highlight = BoardMap::default();
 
     board.render(&mut print);
 
@@ -31,7 +32,7 @@ fn sizeof_option_i32() {
     assert_eq!(std::mem::size_of::<Option<i32>>(), 8);
 }
 
-fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
+fn print_chessboard(pieces: &BoardMap<char>, highlights: &BoardMap<bool>) {
     let chessboard = [
         Rank::_8,
         Rank::_7,
@@ -44,7 +45,7 @@ fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
     ];
     for rank in chessboard {
         for sq in rank.as_mask().iter() {
-            let piece = pieces[sq.index() as usize];
+            let piece = pieces.at(sq);
             let mut fg_color = match piece {
                 'A'..='Z' | ' ' => colored::Color::TrueColor {
                     r: 0xFF,
@@ -59,7 +60,7 @@ fn print_chessboard(pieces: &[char; 64], highlights: &[bool; 64]) {
                 _ => panic!(),
             };
 
-            let bg_color = if highlights[sq.index() as usize] {
+            let bg_color = if highlights.at(sq) {
                 colored::Color::TrueColor {
                     r: 0xAF,
                     g: 0x7F,

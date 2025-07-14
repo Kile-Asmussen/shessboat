@@ -1,4 +1,5 @@
 use crate::bitboard::{
+    boardmap::BoardMap,
     colorfault::Colorfault,
     enums::{Color, Piece},
     masks::Mask,
@@ -18,14 +19,14 @@ impl Bishops {
         self.0
     }
 
-    pub fn render(&self, board: &mut [char; 64], color: Color) {
+    pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
         let piece = match color {
             Color::White => 'B',
             Color::Black => 'b',
         };
 
         for sq in self.0.iter() {
-            board[sq.index() as usize] = piece
+            board.set(sq, piece);
         }
     }
 }

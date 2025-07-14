@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use rand::Fill;
 
 use crate::bitboard::{masks::Mask, squares::Square};
@@ -12,6 +14,11 @@ impl<T: Sized + Copy> BoardMap<T> {
 
     pub const fn at(&self, sq: Square) -> T {
         self.0[sq.index() as usize]
+    }
+
+    pub const fn set(&mut self, sq: Square, it: T) -> &mut Self {
+        self.0[sq.index() as usize] = it;
+        self
     }
 }
 

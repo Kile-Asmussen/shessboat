@@ -1,5 +1,6 @@
 pub mod boardmap;
 pub mod enums;
+pub mod half;
 pub mod hash;
 pub mod masks;
 pub mod moves;
@@ -13,6 +14,7 @@ use enums::Color;
 use crate::bitboard::{
     boardmap::BoardMap,
     enums::{File, Piece, Rank},
+    half::HalfBitBoard,
     hash::BitBoardHasher,
     masks::Mask,
     pieces::{
@@ -95,62 +97,15 @@ impl BitBoard {
         }
     }
 
-    pub fn metadata(&self) -> &Metadata {
-        &self.metadata
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct HalfBitBoard {
-    kings: Kings,
-    queens: Queens,
-    rooks: Rooks,
-    bishops: Bishops,
-    knights: Knights,
-    pawns: Pawns,
-}
-
-impl HalfBitBoard {
-    pub fn new(board: &BoardMap<char>, c: Color) -> Self {
-        Self {
-            kings: Kings::new(board.to_mask(c.letter(Piece::King))),
-            queens: Queens::new(board.to_mask(c.letter(Piece::Queen))),
-            rooks: Rooks::new(board.to_mask(c.letter(Piece::Rook))),
-            bishops: Bishops::new(board.to_mask(c.letter(Piece::Bishop))),
-            knights: Knights::new(board.to_mask(c.letter(Piece::Knight))),
-            pawns: Pawns::new(board.to_mask(c.letter(Piece::Pawn))),
+    pub fn inactive(&self) -> &HalfBitBoard {
+        match self.metadata.to_move {
+            Color::White => self.black(),
+            Color::Black => self.white(),
         }
     }
 
-    pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
-        self.kings.render(board, color);
-        self.queens.render(board, color);
-        self.rooks.render(board, color);
-        self.bishops.render(board, color);
-        self.knights.render(board, color);
-        self.pawns.render(board, color);
-    }
-
-    pub fn as_mask(&self) -> Mask {
-        self.kings.as_mask()
-            | self.queens.as_mask()
-            | self.rooks.as_mask()
-            | self.bishops.as_mask()
-            | self.knights.as_mask()
-            | self.pawns.as_mask()
-    }
-
-    pub fn overlap(&self) -> Mask {
-        self.kings.as_mask()
-            & self.queens.as_mask()
-            & self.rooks.as_mask()
-            & self.bishops.as_mask()
-            & self.knights.as_mask()
-            & self.pawns.as_mask()
-    }
-
-    pub fn invariant(&self) {
-        assert!(!self.overlap().any());
+    pub fn metadata(&self) -> &Metadata {
+        &self.metadata
     }
 }
 

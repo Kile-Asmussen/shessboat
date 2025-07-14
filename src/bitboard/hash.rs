@@ -6,7 +6,7 @@ use std::{
 use rand::{Fill, SeedableRng};
 
 use crate::bitboard::{
-    BitBoard, CastlingRights, HalfBitBoard, boardmap::BoardMap, enums::Color, masks::Mask,
+    BitBoard, CastlingRights, boardmap::BoardMap, enums::Color, half::HalfBitBoard, masks::Mask,
     pieces::Micropawns, squares::Square,
 };
 
@@ -72,12 +72,12 @@ impl BitBoardHasher {
     }
 
     pub fn hash_half(&self, board: &HalfBitBoard) -> HashResult {
-        self.kings.hash(board.kings.as_mask())
-            ^ self.queens.hash(board.queens.as_mask())
-            ^ self.rooks.hash(board.rooks.as_mask())
-            ^ self.bishops.hash(board.bishops.as_mask())
-            ^ self.knights.hash(board.knights.as_mask())
-            ^ self.pawns.hash(board.pawns.as_mask())
+        self.kings.hash(board.kings().as_mask())
+            ^ self.queens.hash(board.queens().as_mask())
+            ^ self.rooks.hash(board.rooks().as_mask())
+            ^ self.bishops.hash(board.bishops().as_mask())
+            ^ self.knights.hash(board.knights().as_mask())
+            ^ self.pawns.hash(board.pawns().as_mask())
     }
 
     pub fn hash_castle(&self, castling: CastlingRights, side: Color) -> HashResult {

@@ -6,21 +6,22 @@ use crate::bitboard::{
     boardmap::BoardMap,
     enums::{File, Rank, Shade},
     masks::Mask,
-    pieces::{kings::Kings, knights::Knights},
+    pieces::{bishops::Bishops, kings::Kings, knights::Knights, rooks::Rooks, slide_move_stop},
     squares::Square,
 };
 
 pub mod bitboard;
 
 fn main() {
-    let board = bitboard::BitBoard::default();
+    let board = bitboard::BitBoard::new();
 
-    let mut print = BoardMap::default();
+    let mut print = BoardMap::new_with(' ');
     let mut highlight = BoardMap::default();
 
     board.render(&mut print);
 
-    let mask = Kings::moves_from(Square::at(File::E, Rank::_5));
+    let mask = Rooks::NORTH.at(Square::at(File::G, Rank::_3));
+    let mask = slide_move_stop(true, mask, board.white().as_mask(), board.black().as_mask());
 
     mask.render(&mut highlight);
 
@@ -57,7 +58,7 @@ fn print_chessboard(pieces: &BoardMap<char>, highlights: &BoardMap<bool>) {
                     g: 0x00,
                     b: 0x00,
                 },
-                _ => panic!(),
+                c => panic!("Not a recognized character {} \\u{:04X}", c, c as u32),
             };
 
             let bg_color = if highlights.at(sq) {

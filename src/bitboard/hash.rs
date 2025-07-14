@@ -1,10 +1,13 @@
-use std::collections::{HashMap, btree_map::Values};
+use std::{
+    backtrace,
+    collections::{HashMap, btree_map::Values},
+};
 
 use rand::{Fill, SeedableRng};
 
 use crate::bitboard::{
     BitBoard, CastlingRights, HalfBitBoard, boardmap::BoardMap, enums::Color, masks::Mask,
-    moves::ValidMove, pieces::Micropawns, squares::Square,
+    pieces::Micropawns, squares::Square,
 };
 
 pub type PositionHasher = HashMap<HashResult, Micropawns>;
@@ -51,7 +54,7 @@ impl BitBoardHasher {
         self.hash_to_move(board.metadata.to_move)
             ^ self.hash_half(&board.white)
             ^ !self.hash_half(&board.black)
-            ^ self.hash_en_passant(board.metadata.most_recent_move.as_ref())
+            ^ self.hash_en_passant(board.metadata.en_passant.is_some())
             ^ self.hash_castle(board.metadata.white_castling, Color::White)
             ^ self.hash_castle(board.metadata.black_castling, Color::Black)
     }
@@ -64,14 +67,8 @@ impl BitBoardHasher {
         }
     }
 
-    pub fn hash_en_passant(&self, valid_move: Option<&ValidMove>) -> HashResult {
-        let Some(m) = valid_move else {
-            return 0;
-        };
-        let Some(_) = m.en_passant() else {
-            return 0;
-        };
-        return self.en_passant;
+    pub fn hash_en_passant(&self, en_passant: bool) -> HashResult {
+        if en_passant { self.en_passant } else { 0 }
     }
 
     pub fn hash_half(&self, board: &HalfBitBoard) -> HashResult {

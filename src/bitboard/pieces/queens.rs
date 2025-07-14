@@ -1,6 +1,5 @@
 use crate::bitboard::{
     boardmap::BoardMap,
-    colorfault::Colorfault,
     enums::{Color, Piece},
     masks::Mask,
     pieces::Micropawns,
@@ -11,12 +10,24 @@ use crate::bitboard::{
 pub struct Queens(Mask);
 
 impl Queens {
-    pub fn materiel(&self) -> Micropawns {
-        self.0.occupied() as usize * 9_000_000
+    pub const fn nil() -> Self {
+        Self(Mask::nil())
     }
 
-    pub fn as_mask(&self) -> Mask {
+    pub const fn new(mask: Mask) -> Self {
+        Self(mask)
+    }
+
+    pub const fn materiel(&self) -> Micropawns {
+        self.0.occupied() as isize * 9_000_000
+    }
+
+    pub const fn as_mask(&self) -> Mask {
         self.0
+    }
+
+    pub const fn mut_mask(&mut self) -> &mut Mask {
+        &mut self.0
     }
 
     pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
@@ -28,11 +39,5 @@ impl Queens {
         for sq in self.0.iter() {
             board.set(sq, piece);
         }
-    }
-}
-
-impl Colorfault for Queens {
-    fn colorfault(c: Color) -> Self {
-        Self(Piece::Queen.as_mask() & c.as_mask())
     }
 }

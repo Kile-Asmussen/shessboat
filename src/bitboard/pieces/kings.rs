@@ -1,24 +1,34 @@
 use crate::bitboard::{
     boardmap::BoardMap,
-    colorfault::Colorfault,
-    enums::{Color, Dir, Piece},
+    enums::{Color, Dir, Piece, Rank},
     masks::Mask,
+    pieces::Micropawns,
     squares::Square,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(transparent)]
-pub struct Kings(Square);
-
-impl Colorfault for Kings {
-    fn colorfault(c: Color) -> Self {
-        Self(Square::from_mask(c.as_mask() & Piece::King.as_mask()).unwrap())
-    }
-}
+pub struct Kings(Mask);
 
 impl Kings {
-    pub fn as_mask(&self) -> Mask {
-        self.0.as_mask()
+    pub const fn nil() -> Self {
+        Self(Mask::nil())
+    }
+
+    pub const fn new(mask: Mask) -> Self {
+        Self(mask)
+    }
+
+    pub const fn materiel(&self) -> Micropawns {
+        self.0.occupied() as isize * 1_000_000_000
+    }
+
+    pub const fn as_mask(&self) -> Mask {
+        self.0
+    }
+
+    pub const fn mut_mask(&mut self) -> &mut Mask {
+        &mut self.0
     }
 
     pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
@@ -27,12 +37,12 @@ impl Kings {
             Color::Black => 'k',
         };
 
-        for sq in self.0.as_mask().iter() {
+        for sq in self.0.iter() {
             board.set(sq, piece);
         }
     }
 
-    const MOVE_DB: BoardMap<Mask> = Self::build_move_db();
+    const MOVES: BoardMap<Mask> = Self::build_move_db();
 
     const fn build_move_db() -> BoardMap<Mask> {
         let mut n = 0;
@@ -54,10 +64,10 @@ impl Kings {
                 | x(sq.go(East))
                 | x(sq.go(South))
                 | x(sq.go(West))
-                | x(sq.goes(&[North, East]))
-                | x(sq.goes(&[South, East]))
-                | x(sq.goes(&[South, West]))
-                | x(sq.goes(&[North, West])),
+                | x(sq.goes([North, East]))
+                | x(sq.goes([South, East]))
+                | x(sq.goes([South, West]))
+                | x(sq.goes([North, West])),
         );
 
         const fn x(sq: Option<Square>) -> u64 {

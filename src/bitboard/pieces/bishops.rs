@@ -1,9 +1,9 @@
 use crate::bitboard::{
     boardmap::BoardMap,
-    colorfault::Colorfault,
-    enums::{Color, Piece},
+    enums::{Color, Dir, Piece},
     masks::Mask,
     pieces::Micropawns,
+    squares::Square,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -11,12 +11,24 @@ use crate::bitboard::{
 pub struct Bishops(Mask);
 
 impl Bishops {
-    pub fn materiel(&self) -> Micropawns {
-        self.0.occupied() as usize * 3_333_333
+    pub const fn nil() -> Self {
+        Self(Mask::nil())
     }
 
-    pub fn as_mask(&self) -> Mask {
+    pub const fn new(mask: Mask) -> Self {
+        Self(mask)
+    }
+
+    pub const fn materiel(&self) -> Micropawns {
+        self.0.occupied() as isize * 3_333_333
+    }
+
+    pub const fn as_mask(&self) -> Mask {
         self.0
+    }
+
+    pub const fn mut_mask(&mut self) -> &mut Mask {
+        &mut self.0
     }
 
     pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
@@ -29,10 +41,30 @@ impl Bishops {
             board.set(sq, piece);
         }
     }
-}
 
-impl Colorfault for Bishops {
-    fn colorfault(c: Color) -> Self {
-        Self(c.as_mask() & Piece::Bishop.as_mask())
+    pub const NORTHEAST: BoardMap<Mask> = Self::build_move_db([Dir::North, Dir::East]);
+    pub const SOUTHEAST: BoardMap<Mask> = Self::build_move_db([Dir::South, Dir::East]);
+    pub const SOUTHWEST: BoardMap<Mask> = Self::build_move_db([Dir::South, Dir::West]);
+    pub const NORTHWEST: BoardMap<Mask> = Self::build_move_db([Dir::North, Dir::West]);
+
+    const fn build_move_db(dir: [Dir; 2]) -> BoardMap<Mask> {
+        let mut sqiter = Mask::full().iter();
+        let mut res = BoardMap::<Mask>::new([Mask::nil(); 64]);
+
+        while let Some(sq) = sqiter.next() {
+            res.set(sq, Self::moves_from(sq, dir));
+        }
+
+        res
+    }
+
+    pub const fn moves_from(sq: Square, dir: [Dir; 2]) -> Mask {
+        let mut sq = sq.goes(dir);
+        let mut res = Mask::nil();
+        while let Some(s) = sq {
+            sq = s.goes(dir);
+            res.set(s);
+        }
+        res
     }
 }

@@ -2,7 +2,10 @@ use std::ops::Index;
 
 use rand::Fill;
 
-use crate::bitboard::{masks::Mask, squares::Square};
+use crate::bitboard::{
+    masks::{Mask, SquareIter},
+    squares::Square,
+};
 
 #[derive(Debug)]
 pub struct BoardMap<T>([T; 64]);
@@ -10,6 +13,13 @@ pub struct BoardMap<T>([T; 64]);
 impl<T: Sized + Copy> BoardMap<T> {
     pub const fn new(it: [T; 64]) -> Self {
         Self(it)
+    }
+
+    pub const fn new_with(it: T) -> Self
+    where
+        T: Copy,
+    {
+        Self([it; 64])
     }
 
     pub const fn at(&self, sq: Square) -> T {
@@ -20,6 +30,13 @@ impl<T: Sized + Copy> BoardMap<T> {
         self.0[sq.index() as usize] = it;
         self
     }
+
+    pub const fn iter(&self) -> BoardMapIter<T>
+    where
+        T: Copy + Sized,
+    {
+        BoardMapIter(Mask::full().iter(), self)
+    }
 }
 
 impl BoardMap<Mask> {
@@ -28,13 +45,16 @@ impl BoardMap<Mask> {
     }
 }
 
-impl<T: Sized + Copy> IntoIterator for BoardMap<T> {
-    type Item = T;
-
-    type IntoIter = <[T; 64] as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+impl BoardMap<char> {
+    pub const fn to_mask(&self, c: char) -> Mask {
+        let mut res = Mask::nil();
+        let mut it = self.iter();
+        while let Some((sq, x)) = it.next() {
+            if c == x {
+                res.set(sq);
+            }
+        }
+        res
     }
 }
 
@@ -52,5 +72,35 @@ where
 impl<T: Default> Default for BoardMap<T> {
     fn default() -> Self {
         Self(std::array::from_fn(|_| T::default()))
+    }
+}
+
+impl<'a, T: Sized + Copy> IntoIterator for &'a BoardMap<T> {
+    type Item = (Square, T);
+
+    type IntoIter = BoardMapIter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct BoardMapIter<'a, T>(SquareIter, &'a BoardMap<T>);
+
+impl<'a, T: Sized + Copy> BoardMapIter<'a, T> {
+    pub const fn next(&mut self) -> Option<(Square, T)> {
+        let Some(sq) = self.0.next() else {
+            return None;
+        };
+
+        Some((sq, self.1.at(sq)))
+    }
+}
+
+impl<'a, T: Sized + Copy> Iterator for BoardMapIter<'a, T> {
+    type Item = (Square, T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next()
     }
 }

@@ -8,7 +8,7 @@ use crate::bitboard::{
     masks::Mask,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct Square(NonZeroI8);
 
@@ -61,6 +61,12 @@ impl Square {
         Self::new(rank.as_rank() * 8 + file.as_file()).unwrap()
     }
 
+    pub const fn dist(&self, other: Square) -> i8 {
+        let (f, r) = self.algebraic();
+        let (of, or) = other.algebraic();
+        (f.as_file() - of.as_file()).abs() + (r.as_rank() - or.as_rank()).abs()
+    }
+
     pub const fn go(&self, dir: Dir) -> Option<Self> {
         let val = self.index();
         let dir = dir.as_offset();
@@ -75,11 +81,11 @@ impl Square {
         Some(Self::new(rank * 8 + file).unwrap())
     }
 
-    pub const fn goes(&self, dirs: &[Dir]) -> Option<Self> {
+    pub const fn goes<const N: usize>(&self, dirs: [Dir; N]) -> Option<Self> {
         let mut n = 0;
         let mut res = Some(*self);
 
-        while n < dirs.len() {
+        while n < N {
             let Some(sq) = res else {
                 return None;
             };

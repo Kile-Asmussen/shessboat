@@ -29,6 +29,17 @@ impl Mask {
         Mask(u64::MAX)
     }
 
+    pub const fn from_board_map_bool(b: &BoardMap<bool>) -> Self {
+        let mut res = Mask::nil();
+        let mut b = b.iter();
+        while let Some((sq, x)) = b.next() {
+            if x {
+                res.set(sq);
+            }
+        }
+        res
+    }
+
     pub const fn new(x: u64) -> Self {
         Mask(x)
     }
@@ -41,8 +52,8 @@ impl Mask {
         self.0 != 0
     }
 
-    pub const fn occupied(&self) -> u32 {
-        self.0.count_ones()
+    pub const fn occupied(&self) -> usize {
+        self.0.count_ones() as usize
     }
 
     pub const fn set(&mut self, sq: Square) -> &mut Self {
@@ -84,7 +95,7 @@ impl Mask {
         ]))
     }
 
-    pub fn iter(&self) -> SquareIter {
+    pub const fn iter(&self) -> SquareIter {
         SquareIter(*self)
     }
 
@@ -163,15 +174,25 @@ impl Product for Mask {
 
 pub struct SquareIter(Mask);
 
-impl Iterator for SquareIter {
-    type Item = Square;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl SquareIter {
+    pub const fn next(&mut self) -> Option<Square> {
         let Some(res) = self.0.first() else {
             return None;
         };
         self.0 = self.0.sans_first();
         Some(res)
+    }
+}
+
+impl Iterator for SquareIter {
+    type Item = Square;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        SquareIter::next(self)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.0.occupied(), Some(self.0.occupied()))
     }
 }
 

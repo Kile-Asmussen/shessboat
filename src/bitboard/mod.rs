@@ -1,5 +1,4 @@
 pub mod boardmap;
-mod colorfault;
 pub mod enums;
 pub mod hash;
 pub mod masks;
@@ -13,13 +12,11 @@ use enums::Color;
 
 use crate::bitboard::{
     boardmap::BoardMap,
-    colorfault::Colorfault,
-    enums::{File, Rank},
+    enums::{File, Piece, Rank},
     hash::BitBoardHasher,
     masks::Mask,
-    moves::{Move, ValidMove},
     pieces::{
-        bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
+        bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
         rooks::Rooks,
     },
     squares::Square,
@@ -33,6 +30,47 @@ pub struct BitBoard {
 }
 
 impl BitBoard {
+    pub fn new() -> Self {
+        Self::new_960(518)
+    }
+
+    pub fn new_960(n: usize) -> Self {
+        let mut arr = chess_960(n);
+        let mut board = [' '; 64];
+
+        memcpy(&mut board[0..8], &arr);
+        for c in &mut arr {
+            *c = c.to_ascii_lowercase();
+        }
+        memcpy(&mut board[56..64], &arr);
+        memset(&mut board[8..16], 'P');
+        memset(&mut board[48..56], 'p');
+
+        let mut board = BoardMap::new(board);
+
+        return Self::new_board(&board);
+
+        fn memcpy(dst: &mut [char], src: &[char]) {
+            for (d, s) in dst.iter_mut().zip(src.iter()) {
+                *d = *s;
+            }
+        }
+
+        fn memset(dst: &mut [char], c: char) {
+            for d in dst {
+                *d = c;
+            }
+        }
+    }
+
+    pub fn new_board(board: &BoardMap<char>) -> Self {
+        Self {
+            metadata: Metadata::default(),
+            white: HalfBitBoard::new(board, Color::White),
+            black: HalfBitBoard::new(board, Color::Black),
+        }
+    }
+
     pub fn render(&self, board: &mut BoardMap<char>) {
         self.white.render(board, Color::White);
         self.black.render(board, Color::Black);
@@ -42,24 +80,23 @@ impl BitBoard {
         self.white.as_mask() | self.black.as_mask()
     }
 
-    pub fn overlap(&self) -> Mask {
-        self.white.overlap() & self.black.overlap()
+    pub fn white(&self) -> &HalfBitBoard {
+        &self.white
     }
 
-    pub fn invariant(&self) {
-        self.white.invariant();
-        self.black.invariant();
-        assert!(!self.overlap().any());
+    pub fn black(&self) -> &HalfBitBoard {
+        &self.black
     }
-}
 
-impl Default for BitBoard {
-    fn default() -> Self {
-        Self {
-            metadata: Default::default(),
-            white: Colorfault::colorfault(Color::White),
-            black: Colorfault::colorfault(Color::Black),
+    pub fn active(&self) -> &HalfBitBoard {
+        match self.metadata.to_move {
+            Color::White => self.white(),
+            Color::Black => self.black(),
         }
+    }
+
+    pub fn metadata(&self) -> &Metadata {
+        &self.metadata
     }
 }
 
@@ -73,20 +110,18 @@ pub struct HalfBitBoard {
     pawns: Pawns,
 }
 
-impl Colorfault for HalfBitBoard {
-    fn colorfault(c: Color) -> Self {
+impl HalfBitBoard {
+    pub fn new(board: &BoardMap<char>, c: Color) -> Self {
         Self {
-            kings: Colorfault::colorfault(c),
-            queens: Colorfault::colorfault(c),
-            rooks: Colorfault::colorfault(c),
-            bishops: Colorfault::colorfault(c),
-            knights: Colorfault::colorfault(c),
-            pawns: Colorfault::colorfault(c),
+            kings: Kings::new(board.to_mask(c.letter(Piece::King))),
+            queens: Queens::new(board.to_mask(c.letter(Piece::Queen))),
+            rooks: Rooks::new(board.to_mask(c.letter(Piece::Rook))),
+            bishops: Bishops::new(board.to_mask(c.letter(Piece::Bishop))),
+            knights: Knights::new(board.to_mask(c.letter(Piece::Knight))),
+            pawns: Pawns::new(board.to_mask(c.letter(Piece::Pawn))),
         }
     }
-}
 
-impl HalfBitBoard {
     pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
         self.kings.render(board, color);
         self.queens.render(board, color);
@@ -127,7 +162,7 @@ pub struct Metadata {
     change_happened_at: usize,
     white_castling: CastlingRights,
     black_castling: CastlingRights,
-    most_recent_move: Option<ValidMove>,
+    en_passant: Option<Square>,
 }
 
 impl Default for Metadata {
@@ -139,7 +174,7 @@ impl Default for Metadata {
             change_happened_at: 0,
             white_castling: CastlingRights::default(),
             black_castling: CastlingRights::default(),
-            most_recent_move: None,
+            en_passant: None,
         }
     }
 }

@@ -2,7 +2,7 @@ use crate::bitboard::{
     colorfault::Colorfault,
     enums::{Color, Piece},
     masks::Mask,
-    movedbs::MoveDb,
+    boardmap::BoardMap,
     pieces::Micropawns,
 };
 

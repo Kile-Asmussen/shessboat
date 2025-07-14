@@ -3,40 +3,31 @@ use std::collections::{HashMap, btree_map::Values};
 use rand::{Fill, SeedableRng};
 
 use crate::bitboard::{
-    BitBoard, CastlingRights, HalfBitBoard, enums::Color, masks::Mask, moves::ValidMove,
-    pieces::Micropawns, squares::Square,
+    BitBoard, CastlingRights, HalfBitBoard, boardmap::BoardMap, enums::Color, masks::Mask,
+    moves::ValidMove, pieces::Micropawns, squares::Square,
 };
 
-pub struct MaskHasher([u128; 64]);
+pub type PositionHasher = HashMap<HashResult, Micropawns>;
 
-impl Default for MaskHasher {
-    fn default() -> Self {
-        Self([0; 64])
-    }
-}
+pub type MaskHasher = BoardMap<HashResult>;
+pub type HashResult = u128;
 
 impl MaskHasher {
-    pub fn hash(&self, m: Mask) -> u128 {
+    pub fn hash(&self, m: Mask) -> HashResult {
         let mut res = 0;
-        for s in m.iter() {
-            res ^= self.0[s.index() as usize]
+        for sq in m.iter() {
+            res ^= self.at(sq);
         }
         res
     }
 }
 
-impl Fill for MaskHasher {
-    fn fill<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
-        self.0.fill(rng);
-    }
-}
-
 #[derive(Default)]
 pub struct BitBoardHasher {
-    black_to_move: u128,
-    en_passant: u128,
-    white_castling: (u128, u128),
-    black_castling: (u128, u128),
+    black_to_move: HashResult,
+    en_passant: HashResult,
+    white_castling: (HashResult, HashResult),
+    black_castling: (HashResult, HashResult),
 
     kings: MaskHasher,
     queens: MaskHasher,
@@ -56,7 +47,7 @@ impl BitBoardHasher {
         res
     }
 
-    pub fn hash(&self, board: &BitBoard) -> u128 {
+    pub fn hash(&self, board: &BitBoard) -> HashResult {
         self.hash_to_move(board.metadata.to_move)
             ^ self.hash_half(&board.white)
             ^ !self.hash_half(&board.black)
@@ -65,7 +56,7 @@ impl BitBoardHasher {
             ^ self.hash_castle(board.metadata.black_castling, Color::Black)
     }
 
-    pub fn hash_to_move(&self, turn: Color) -> u128 {
+    pub fn hash_to_move(&self, turn: Color) -> HashResult {
         if turn == Color::Black {
             self.black_to_move
         } else {
@@ -73,7 +64,7 @@ impl BitBoardHasher {
         }
     }
 
-    pub fn hash_en_passant(&self, valid_move: Option<&ValidMove>) -> u128 {
+    pub fn hash_en_passant(&self, valid_move: Option<&ValidMove>) -> HashResult {
         let Some(m) = valid_move else {
             return 0;
         };
@@ -83,7 +74,7 @@ impl BitBoardHasher {
         return self.en_passant;
     }
 
-    pub fn hash_half(&self, board: &HalfBitBoard) -> u128 {
+    pub fn hash_half(&self, board: &HalfBitBoard) -> HashResult {
         self.kings.hash(board.kings.as_mask())
             ^ self.queens.hash(board.queens.as_mask())
             ^ self.rooks.hash(board.rooks.as_mask())
@@ -92,7 +83,7 @@ impl BitBoardHasher {
             ^ self.pawns.hash(board.pawns.as_mask())
     }
 
-    pub fn hash_castle(&self, castling: CastlingRights, side: Color) -> u128 {
+    pub fn hash_castle(&self, castling: CastlingRights, side: Color) -> HashResult {
         let vals = match side {
             Color::White => self.white_castling,
             Color::Black => self.black_castling,

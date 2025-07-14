@@ -2,7 +2,7 @@ use crate::bitboard::{
     colorfault::Colorfault,
     enums::{Color, Dir, Piece},
     masks::Mask,
-    movedbs::MoveDb,
+    boardmap::BoardMap,
     squares::Square,
 };
 
@@ -32,9 +32,9 @@ impl Kings {
         }
     }
 
-    const MOVE_DB: MoveDb<Mask> = Self::build_move_db();
+    const MOVE_DB: BoardMap<Mask> = Self::build_move_db();
 
-    const fn build_move_db() -> MoveDb<Mask> {
+    const fn build_move_db() -> BoardMap<Mask> {
         let mut n = 0;
         let mut res = [Mask::new(0); 64];
 
@@ -44,7 +44,7 @@ impl Kings {
             n += 1;
         }
 
-        MoveDb::new(res)
+        BoardMap::new(res)
     }
 
     pub const fn moves_from(sq: Square) -> Mask {

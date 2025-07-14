@@ -1,10 +1,10 @@
 use std::u64;
 
 use crate::bitboard::{
+    boardmap::BoardMap,
     colorfault::Colorfault,
     enums::{Color, Dir, File, Piece, Rank},
     masks::Mask,
-    movedbs::MoveDb,
     pieces::Micropawns,
     squares::Square,
 };
@@ -33,9 +33,9 @@ impl Knights {
         }
     }
 
-    pub const MOVE_DB: MoveDb<Mask> = Self::build_move_db();
+    pub const MOVE_DB: BoardMap<Mask> = Self::build_move_db();
 
-    const fn build_move_db() -> MoveDb<Mask> {
+    const fn build_move_db() -> BoardMap<Mask> {
         let mut n = 0;
         let mut res = [Mask::new(0); 64];
 
@@ -45,7 +45,7 @@ impl Knights {
             n += 1;
         }
 
-        MoveDb::new(res)
+        BoardMap::new(res)
     }
 
     pub const fn moves_from(sq: Square) -> Mask {

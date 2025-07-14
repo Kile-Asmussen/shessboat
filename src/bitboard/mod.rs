@@ -1,8 +1,8 @@
+pub mod boardmap;
 mod colorfault;
 pub mod enums;
 pub mod hash;
 pub mod masks;
-pub mod movedbs;
 pub mod moves;
 pub mod pieces;
 pub mod squares;

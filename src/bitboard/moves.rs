@@ -4,6 +4,11 @@ use crate::bitboard::{
     squares::Square,
 };
 
+pub struct ProtoMove {
+    from: Square,
+    to: Square,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Move {
     piece: Piece,

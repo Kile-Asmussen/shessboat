@@ -44,6 +44,10 @@ impl Mask {
         Mask(x)
     }
 
+    pub const fn overlap(&self, other: Mask) -> Mask {
+        Mask(self.as_u64() & other.as_u64())
+    }
+
     pub const fn as_u64(&self) -> u64 {
         self.0
     }
@@ -56,12 +60,12 @@ impl Mask {
         self.0.count_ones() as usize
     }
 
-    pub const fn set(&mut self, sq: Square) -> &mut Self {
+    pub const fn set(mut self, sq: Square) -> Self {
         self.0 |= sq.as_mask().as_u64();
         self
     }
 
-    pub const fn unset(&mut self, sq: Square) -> &mut Self {
+    pub const fn unset(mut self, sq: Square) -> Self {
         self.0 &= !sq.as_mask().as_u64();
         self
     }
@@ -75,7 +79,7 @@ impl Mask {
             return *self;
         };
         let mut res = *self;
-        *res.unset(sq)
+        res.unset(sq)
     }
 
     pub const fn contains(&self, sq: Square) -> bool {

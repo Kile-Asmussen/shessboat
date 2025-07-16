@@ -80,7 +80,7 @@ impl BitBoard {
         }
     }
 
-    pub fn inactive(&self) -> &HalfBitBoard {
+    pub fn passive(&self) -> &HalfBitBoard {
         match self.metadata.to_move {
             Color::White => &self.black,
             Color::Black => &self.white,

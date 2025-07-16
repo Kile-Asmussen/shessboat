@@ -1,11 +1,12 @@
 use crate::bitboard::{
     boardmap::BoardMap,
-    enums::{Color, Piece},
+    enums::{Color, ColorPiece, Piece},
     masks::Mask,
     pieces::{
         bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
         rooks::Rooks,
     },
+    squares::Square,
 };
 
 #[derive(Clone, Debug)]
@@ -21,12 +22,12 @@ pub struct HalfBitBoard {
 impl HalfBitBoard {
     pub fn new(board: &BoardMap<char>, c: Color) -> Self {
         Self {
-            kings: Kings::new(board.to_mask(c.letter(Piece::King))),
-            queens: Queens::new(board.to_mask(c.letter(Piece::Queen))),
-            rooks: Rooks::new(board.to_mask(c.letter(Piece::Rook))),
-            bishops: Bishops::new(board.to_mask(c.letter(Piece::Bishop))),
-            knights: Knights::new(board.to_mask(c.letter(Piece::Knight))),
-            pawns: Pawns::new(board.to_mask(c.letter(Piece::Pawn))),
+            kings: Kings::new(board.to_mask(ColorPiece::new(c, Piece::King).letter())),
+            queens: Queens::new(board.to_mask(ColorPiece::new(c, Piece::Queen).letter())),
+            rooks: Rooks::new(board.to_mask(ColorPiece::new(c, Piece::Rook).letter())),
+            bishops: Bishops::new(board.to_mask(ColorPiece::new(c, Piece::Bishop).letter())),
+            knights: Knights::new(board.to_mask(ColorPiece::new(c, Piece::Knight).letter())),
+            pawns: Pawns::new(board.to_mask(ColorPiece::new(c, Piece::Pawn).letter())),
         }
     }
 
@@ -46,5 +47,24 @@ impl HalfBitBoard {
             | self.bishops.as_mask()
             | self.knights.as_mask()
             | self.pawns.as_mask()
+    }
+
+    pub fn piece(&self, sq: Square) -> Option<Piece> {
+        let sq = sq.as_mask();
+        if self.kings.as_mask().overlap(sq).any() {
+            Some(Piece::King)
+        } else if self.queens.as_mask().overlap(sq).any() {
+            Some(Piece::Queen)
+        } else if self.rooks.as_mask().overlap(sq).any() {
+            Some(Piece::Rook)
+        } else if self.bishops.as_mask().overlap(sq).any() {
+            Some(Piece::Bishop)
+        } else if self.knights.as_mask().overlap(sq).any() {
+            Some(Piece::Knight)
+        } else if self.pawns.as_mask().overlap(sq).any() {
+            Some(Piece::Pawn)
+        } else {
+            None
+        }
     }
 }

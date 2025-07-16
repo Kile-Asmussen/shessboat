@@ -10,13 +10,6 @@ pub enum Color {
 }
 
 impl Color {
-    pub const fn letter(&self, p: Piece) -> char {
-        match self {
-            Color::White => p.letter(),
-            Color::Black => p.letter().to_ascii_lowercase(),
-        }
-    }
-
     pub const fn as_mask(&self) -> Mask {
         match self {
             Self::White => Mask::board([
@@ -79,7 +72,7 @@ impl Shade {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[repr(u8)]
 pub enum Rank {
     _1 = 1,
@@ -141,7 +134,7 @@ fn rank_roundtrip() {
     );
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[repr(u8)]
 pub enum File {
     A = 1,
@@ -209,11 +202,11 @@ fn file_mask_roundtrip() {
 #[repr(u8)]
 pub enum Piece {
     Pawn = 1,
-    Knight = 2,
-    Bishop = 3,
-    Rook = 4,
-    Queen = 5,
-    King = 6,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King,
 }
 
 impl Piece {
@@ -245,6 +238,94 @@ impl Dir {
             Dir::East => 1,
             Dir::South => -8,
             Dir::West => -1,
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ColorPiece {
+    WhitePawn = 1,
+    WhiteKnight,
+    WhiteBishop,
+    WhiteRook,
+    WhiteQueen,
+    WhiteKing,
+    BlackPawn,
+    BlackKnight,
+    BlackBishop,
+    BlackRook,
+    BlackQueen,
+    BlackKing,
+}
+
+impl ColorPiece {
+    pub const fn new(c: Color, p: Piece) -> Self {
+        use Color::*;
+        use ColorPiece::*;
+        use Piece::*;
+        match c {
+            White => match p {
+                Pawn => WhitePawn,
+                Knight => WhiteKnight,
+                Bishop => WhiteBishop,
+                Rook => WhiteRook,
+                Queen => WhiteQueen,
+                King => WhiteKing,
+            },
+            Black => match p {
+                Pawn => BlackPawn,
+                Knight => BlackKnight,
+                Bishop => BlackBishop,
+                Rook => BlackRook,
+                Queen => BlackQueen,
+                King => BlackKing,
+            },
+        }
+    }
+
+    pub const fn color(&self) -> Color {
+        self.split().0
+    }
+
+    pub const fn piece(&self) -> Piece {
+        self.split().1
+    }
+
+    pub const fn split(&self) -> (Color, Piece) {
+        use Color::*;
+        use ColorPiece::*;
+        use Piece::*;
+        match self {
+            WhitePawn => (White, Pawn),
+            WhiteKnight => (White, Knight),
+            WhiteBishop => (White, Bishop),
+            WhiteRook => (White, Rook),
+            WhiteQueen => (White, Queen),
+            WhiteKing => (White, King),
+            BlackPawn => (Black, Pawn),
+            BlackKnight => (Black, Knight),
+            BlackBishop => (Black, Bishop),
+            BlackRook => (Black, Rook),
+            BlackQueen => (Black, Queen),
+            BlackKing => (Black, King),
+        }
+    }
+
+    pub const fn letter(&self) -> char {
+        use ColorPiece::*;
+        match self {
+            WhitePawn => 'P',
+            WhiteKnight => 'N',
+            WhiteBishop => 'B',
+            WhiteRook => 'R',
+            WhiteQueen => 'Q',
+            WhiteKing => 'K',
+            BlackPawn => 'p',
+            BlackKnight => 'n',
+            BlackBishop => 'b',
+            BlackRook => 'r',
+            BlackQueen => 'q',
+            BlackKing => 'k',
         }
     }
 }

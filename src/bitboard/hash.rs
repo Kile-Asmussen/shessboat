@@ -11,7 +11,7 @@ use crate::bitboard::{
     BitBoard, CastlingInfo, CastlingRight, CastlingRights,
     boardmap::BoardMap,
     castling::CastlingSide,
-    enums::{Color, Piece},
+    enums::{Color, ColorPiece, Piece},
     half::HalfBitBoard,
     masks::Mask,
     moves::Move,
@@ -76,7 +76,7 @@ impl MaskHasher {
 #[derive(Default)]
 pub struct BitBoardHasher {
     pub black_to_move: HashResult,
-    pub en_passant: HashResult,
+    pub en_passant_possible: HashResult,
     pub white: HalfBitBoardHasher,
     pub black: HalfBitBoardHasher,
 }
@@ -84,7 +84,7 @@ pub struct BitBoardHasher {
 impl BitBoardHasher {
     pub const PI: &[u8; 32] = b"3.141592653589793238462643383279";
 
-    pub fn new(&mut self) -> Self {
+    pub fn new() -> Self {
         let mut rng = rand::rngs::StdRng::from_seed(*Self::PI);
         let mut res = Self::default();
         res.fill(&mut rng);
@@ -107,27 +107,32 @@ impl BitBoardHasher {
     }
 
     pub fn hash_en_passant(&self, en_passant: bool) -> HashResult {
-        if en_passant { self.en_passant } else { 0 }
+        if en_passant {
+            self.en_passant_possible
+        } else {
+            0
+        }
     }
 
     pub fn hash_a_move(&self, mut hash: HashResult, mv: Move) -> HashResult {
-        let (same, opposite) = match mv.color {
+        let Some(from_to) = mv.from_to else {
+            return 0;
+        };
+        let Some(color_and_piece) = mv.color_and_piece else {
+            return 0;
+        };
+
+        let (same, opposite) = match color_and_piece.color() {
             Color::White => (&self.white, &self.black),
             Color::Black => (&self.black, &self.white),
         };
 
-        let mut res = same.hash_piece(mv.piece, mv.from) ^ same.hash_piece(mv.piece, mv.to);
+        let mut res = same.hash_piece(color_and_piece.piece(), from_to.from)
+            ^ same.hash_piece(color_and_piece.piece(), from_to.to);
 
-        if let Some((sq, p)) = mv.capture {
-            res ^= opposite.hash_piece(p, sq);
-            if mv.piece == Piece::Pawn && mv.to != sq {
-                res ^= self.en_passant
-            }
-        }
-
-        let en_passant = mv.en_passant_square().is_some();
-        if en_passant != mv.en_passant_skipped {
-            res ^= self.en_passant
+        let en_passant_possible = mv.en_passant_square().is_some();
+        if en_passant_possible != mv.en_passant_last_turn {
+            res ^= self.en_passant_possible
         }
 
         match mv.castling {
@@ -143,7 +148,7 @@ impl BitBoardHasher {
 impl Fill for BitBoardHasher {
     fn fill<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
         self.black_to_move = rng.random();
-        self.en_passant = rng.random();
+        self.en_passant_possible = rng.random();
         self.white.fill(rng);
         self.black.fill(rng);
     }

@@ -22,7 +22,7 @@ impl Knights {
     }
 
     pub const fn materiel(&self) -> Micropawns {
-        self.0.occupied() as isize * 3_250_000
+        self.0.occupied() as i64 * 3_250_000
     }
 
     pub const fn as_mask(&self) -> Mask {

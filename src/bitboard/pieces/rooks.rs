@@ -20,7 +20,7 @@ impl Rooks {
     }
 
     pub const fn materiel(&self) -> Micropawns {
-        self.0.occupied() as isize * 5_000_000
+        self.0.occupied() as i64 * 5_000_000
     }
 
     pub const fn as_mask(&self) -> Mask {

@@ -10,7 +10,7 @@ pub mod pawns;
 pub mod queens;
 pub mod rooks;
 
-pub type Micropawns = isize;
+pub type Micropawns = i64;
 
 pub const fn slide_move_stop(
     positive: bool,

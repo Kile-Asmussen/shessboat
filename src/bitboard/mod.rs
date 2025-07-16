@@ -136,20 +136,27 @@ impl Default for Metadata {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct CastlingRights {
-    ooo: bool,
-    oo: bool,
+    ooo: CastlingRight,
+    oo: CastlingRight,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum CastlingRight {
+    Retained = 1,
+    Forefeited,
+    Claimed,
 }
 
 impl CastlingRights {
-    pub fn new(ooo: bool, oo: bool) -> Self {
+    pub fn new(ooo: CastlingRight, oo: CastlingRight) -> Self {
         Self { ooo, oo }
     }
 
-    fn ooo(&self) -> bool {
+    fn ooo(&self) -> CastlingRight {
         self.ooo
     }
 
-    fn oo(&self) -> bool {
+    fn oo(&self) -> CastlingRight {
         self.oo
     }
 }
@@ -157,8 +164,8 @@ impl CastlingRights {
 impl Default for CastlingRights {
     fn default() -> Self {
         Self {
-            ooo: true,
-            oo: true,
+            ooo: CastlingRight::Retained,
+            oo: CastlingRight::Retained,
         }
     }
 }

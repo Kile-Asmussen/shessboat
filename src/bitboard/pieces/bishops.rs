@@ -20,7 +20,7 @@ impl Bishops {
     }
 
     pub const fn materiel(&self) -> Micropawns {
-        self.0.occupied() as isize * 3_333_333
+        self.0.occupied() as i64 * 3_333_333
     }
 
     pub const fn as_mask(&self) -> Mask {

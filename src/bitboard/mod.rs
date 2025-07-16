@@ -10,12 +10,10 @@ pub mod squares;
 
 use std::{collections::HashSet, hash::Hash, sync::LazyLock};
 
-use enums::Color;
-
 use crate::bitboard::{
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRight, CastlingRights},
-    enums::{File, Piece, Rank},
+    enums::{Color, ColorPiece, File, Piece, Rank},
     half::HalfBitBoard,
     hash::BitBoardHasher,
     masks::Mask,
@@ -42,21 +40,20 @@ impl BitBoard {
         Self::new_starting_array(chess_960(n))
     }
 
-    pub fn new_starting_array(mut arr: [char; 8]) -> Self {
-        let mut board = [' '; 64];
+    pub fn new_starting_array(mut arr: [Piece; 8]) -> Self {
+        let mut board = [None; 64];
 
-        board[0..8].copy_from_slice(&arr);
-        arr = arr.map(|c| c.to_ascii_lowercase());
-        board[56..64].copy_from_slice(&arr);
-        board[8..16].fill('P');
-        board[48..56].fill('p');
+        board[0..8].copy_from_slice(&arr.map(|p| Some(ColorPiece::new(Color::White, p))));
+        board[56..64].copy_from_slice(&arr.map(|p| Some(ColorPiece::new(Color::Black, p))));
+        board[8..16].fill(Some(ColorPiece::WhitePawn));
+        board[48..56].fill(Some(ColorPiece::BlackPawn));
 
         let mut board = BoardMap::new(board);
 
         return Self::new_board(&board);
     }
 
-    pub fn new_board(board: &BoardMap<char>) -> Self {
+    pub fn new_board(board: &BoardMap<Option<ColorPiece>>) -> Self {
         Self {
             metadata: Metadata::default(),
             white: HalfBitBoard::new(board, Color::White),
@@ -64,7 +61,7 @@ impl BitBoard {
         }
     }
 
-    pub fn render(&self, board: &mut BoardMap<char>) {
+    pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>) {
         self.white.render(board, Color::White);
         self.black.render(board, Color::Black);
     }

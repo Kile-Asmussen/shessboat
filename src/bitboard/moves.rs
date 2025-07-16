@@ -32,10 +32,10 @@ impl ProtoMove {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Move {
-    pub color_and_piece: Option<ColorPiece>,
-    pub from_to: Option<ProtoMove>,
+    pub color_and_piece: ColorPiece,
+    pub from_to: ProtoMove,
     pub castling: Option<CastlingSide>,
     pub capture: Option<(Square, Piece)>,
     pub en_passant_last_turn: bool,
@@ -44,20 +44,17 @@ pub struct Move {
 
 impl Move {
     pub fn en_passant_square(&self) -> Option<Square> {
-        let Some(from_to) = self.from_to else {
-            return None;
-        };
-        if self.color_and_piece == Some(ColorPiece::WhitePawn) {
+        if self.color_and_piece == ColorPiece::WhitePawn {
             if let ((f, Rank::_2), (_, Rank::_4)) =
-                (from_to.from.algebraic(), from_to.to.algebraic())
+                (self.from_to.from.algebraic(), self.from_to.to.algebraic())
             {
                 return Some(Square::at(f, Rank::_3));
             } else {
                 return None;
             };
-        } else if self.color_and_piece == Some(ColorPiece::BlackPawn) {
+        } else if self.color_and_piece == ColorPiece::BlackPawn {
             if let ((f, Rank::_7), (_, Rank::_5)) =
-                (from_to.from.algebraic(), from_to.to.algebraic())
+                (self.from_to.from.algebraic(), self.from_to.to.algebraic())
             {
                 return Some(Square::at(f, Rank::_6));
             } else {
@@ -76,37 +73,16 @@ fn size_fuckery() {
 }
 
 impl BitBoard {
-    fn annotate(&self, res: &mut Move) {
-        let Some(from_to) = res.from_to else {
-            return;
-        };
-
-        if res.color_and_piece.is_none() {
-            let color = self.metadata.to_move;
-            let piece = self.active().piece(from_to.from);
-
-            if let Some(piece) = self.active().piece(from_to.from) {
-                res.color_and_piece = Some(ColorPiece::new(color, piece))
-            }
-        }
-
-        if let Some(ColorPiece::WhiteKing | ColorPiece::BlackKing) = res.color_and_piece {
-            if from_to.dist() == 2 {
-                todo!()
-            }
-        }
-    }
-
-    fn apply(&mut self, mv: &Move) -> bool {
+    pub fn apply(&mut self, mv: &Move) -> bool {
         todo!()
     }
 
-    fn generate_moves(&self, res: &mut Vec<Move>) {
+    pub fn generate_moves(&self, res: &mut Vec<Move>) {
         self.generate_knight_moves(res);
     }
 
-    fn generate_knight_moves(&self, res: &mut Vec<Move>) {
-        let color_and_piece = Some(ColorPiece::new(self.metadata.to_move, Piece::Knight));
+    pub fn generate_knight_moves(&self, res: &mut Vec<Move>) {
+        let color_and_piece = ColorPiece::new(self.metadata.to_move, Piece::Knight);
 
         let active = self.active();
         let passive = self.passive();
@@ -123,11 +99,12 @@ impl BitBoard {
             let possible = Knights::MOVES.at(from) & !excluded;
 
             for to in possible {
+                let from_to = ProtoMove { from, to };
                 let capture = passive.piece(from);
 
                 res.push(Move {
                     color_and_piece,
-                    from_to: Some(ProtoMove { from, to }),
+                    from_to,
                     castling: None,
                     capture: capture.map(|p| (to, p)),
                     en_passant_last_turn: self.metadata.en_passant.is_some(),

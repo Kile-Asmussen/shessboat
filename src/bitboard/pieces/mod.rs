@@ -1,7 +1,10 @@
 use core::panic;
 use std::collections::BTreeSet;
 
-use crate::bitboard::masks::Mask;
+use crate::bitboard::{
+    enums::{ColorPiece, Piece},
+    masks::Mask,
+};
 
 pub mod bishops;
 pub mod kings;
@@ -44,20 +47,20 @@ pub const fn slide_move_stop(
     })
 }
 
-pub fn chess_960(mut frcn: usize) -> [char; 8] {
-    let mut res = ['.'; 8];
+pub fn chess_960(mut frcn: usize) -> [Piece; 8] {
+    let mut res = [None; 8];
     frcn %= 960;
 
     let bl = frcn % 4 * 2 + 1;
-    res[bl] = 'B';
+    res[bl] = Some(Piece::Bishop);
     frcn /= 4;
 
     let bd = frcn % 4 * 2;
-    res[bd] = 'B';
+    res[bd] = Some(Piece::Bishop);
     frcn /= 4;
 
     let mut q = frcn % 6;
-    skip_over(q, 'Q', &mut res);
+    skip_over(q, Piece::Queen, &mut res);
 
     frcn /= 6;
     let (mut n1, mut n2) = match frcn {
@@ -68,20 +71,20 @@ pub fn chess_960(mut frcn: usize) -> [char; 8] {
         _ => panic!(),
     };
 
-    skip_over(n1, 'N', &mut res);
-    skip_over(n2, 'N', &mut res);
-    skip_over(0, 'R', &mut res);
-    skip_over(0, 'K', &mut res);
-    skip_over(0, 'R', &mut res);
+    skip_over(n1, Piece::Knight, &mut res);
+    skip_over(n2, Piece::Knight, &mut res);
+    skip_over(0, Piece::Rook, &mut res);
+    skip_over(0, Piece::King, &mut res);
+    skip_over(0, Piece::Rook, &mut res);
 
-    return res;
+    return res.map(|x| x.unwrap());
 
-    fn skip_over(mut n: usize, c: char, res: &mut [char; 8]) {
+    fn skip_over(mut n: usize, c: Piece, res: &mut [Option<Piece>; 8]) {
         for x in &mut res[..] {
-            if *x == '.' && n == 0 {
-                *x = c;
+            if x.is_none() && n == 0 {
+                *x = Some(c);
                 break;
-            } else if *x == '.' {
+            } else if x.is_none() {
                 n -= 1;
             }
         }
@@ -94,7 +97,7 @@ fn chess960_known_positions() {
     assert_eq!(s(chess_960(1)), "BQNBNRKR");
     assert_eq!(s(chess_960(518)), "RNBQKBNR");
 
-    fn s(a: [char; 8]) -> String {
-        a.iter().collect()
+    fn s(a: [Piece; 8]) -> String {
+        a.iter().map(|p| p.white_letter()).collect()
     }
 }

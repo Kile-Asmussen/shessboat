@@ -3,6 +3,7 @@ use std::ops::Index;
 use rand::Fill;
 
 use crate::bitboard::{
+    enums::ColorPiece,
     masks::{Mask, SquareIter},
     squares::Square,
 };
@@ -52,6 +53,21 @@ impl BoardMap<char> {
         while let Some((sq, x)) = it.next() {
             if c == x {
                 res.set(sq);
+            }
+        }
+        res
+    }
+}
+
+impl BoardMap<Option<ColorPiece>> {
+    pub const fn to_mask(&self, c: Option<ColorPiece>) -> Mask {
+        let mut res = Mask::nil();
+        let mut it = self.iter();
+        while let Some((sq, x)) = it.next() {
+            if let (Some(c), Some(x)) = (c, x) {
+                if c as u8 == x as u8 {
+                    res.set(sq);
+                }
             }
         }
         res

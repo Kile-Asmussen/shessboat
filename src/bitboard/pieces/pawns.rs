@@ -1,6 +1,6 @@
 use crate::bitboard::{
     boardmap::BoardMap,
-    enums::{Color, Dir, Piece, Rank},
+    enums::{Color, ColorPiece, Dir, Piece, Rank},
     masks::Mask,
     pieces::Micropawns,
     squares::Square,
@@ -31,14 +31,9 @@ impl Pawns {
         &mut self.0
     }
 
-    pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
-        let piece = match color {
-            Color::White => 'P',
-            Color::Black => 'p',
-        };
-
+    pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
         for sq in self.0.iter() {
-            board.set(sq, piece);
+            board.set(sq, Some(ColorPiece::new(color, Piece::Pawn)));
         }
     }
 

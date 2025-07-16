@@ -6,7 +6,7 @@ use std::{
 
 use crate::bitboard::{
     boardmap::BoardMap,
-    enums::{Color, Piece, Shade},
+    enums::{Color, ColorPiece, Shade},
     squares::Square,
 };
 

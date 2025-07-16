@@ -210,7 +210,7 @@ pub enum Piece {
 }
 
 impl Piece {
-    pub const fn letter(&self) -> char {
+    pub const fn white_letter(&self) -> char {
         match self {
             Piece::Pawn => 'P',
             Piece::Knight => 'N',
@@ -218,6 +218,17 @@ impl Piece {
             Piece::Rook => 'R',
             Piece::Queen => 'Q',
             Piece::King => 'K',
+        }
+    }
+
+    pub const fn black_unicode(&self) -> char {
+        match self {
+            Piece::Pawn => '\u{265F}',
+            Piece::Knight => '\u{265E}',
+            Piece::Bishop => '\u{265D}',
+            Piece::Rook => '\u{265C}',
+            Piece::Queen => '\u{265B}',
+            Piece::King => '\u{265A}',
         }
     }
 }

@@ -20,18 +20,18 @@ pub struct HalfBitBoard {
 }
 
 impl HalfBitBoard {
-    pub fn new(board: &BoardMap<char>, c: Color) -> Self {
+    pub fn new(board: &BoardMap<Option<ColorPiece>>, c: Color) -> Self {
         Self {
-            kings: Kings::new(board.to_mask(ColorPiece::new(c, Piece::King).letter())),
-            queens: Queens::new(board.to_mask(ColorPiece::new(c, Piece::Queen).letter())),
-            rooks: Rooks::new(board.to_mask(ColorPiece::new(c, Piece::Rook).letter())),
-            bishops: Bishops::new(board.to_mask(ColorPiece::new(c, Piece::Bishop).letter())),
-            knights: Knights::new(board.to_mask(ColorPiece::new(c, Piece::Knight).letter())),
-            pawns: Pawns::new(board.to_mask(ColorPiece::new(c, Piece::Pawn).letter())),
+            kings: Kings::new(board.to_mask(Some(ColorPiece::new(c, Piece::King)))),
+            queens: Queens::new(board.to_mask(Some(ColorPiece::new(c, Piece::Queen)))),
+            rooks: Rooks::new(board.to_mask(Some(ColorPiece::new(c, Piece::Rook)))),
+            bishops: Bishops::new(board.to_mask(Some(ColorPiece::new(c, Piece::Bishop)))),
+            knights: Knights::new(board.to_mask(Some(ColorPiece::new(c, Piece::Knight)))),
+            pawns: Pawns::new(board.to_mask(Some(ColorPiece::new(c, Piece::Pawn)))),
         }
     }
 
-    pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
+    pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
         self.kings.render(board, color);
         self.queens.render(board, color);
         self.rooks.render(board, color);

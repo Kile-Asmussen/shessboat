@@ -2,7 +2,7 @@ use std::u64;
 
 use crate::bitboard::{
     boardmap::BoardMap,
-    enums::{Color, Dir, File, Piece, Rank},
+    enums::{Color, ColorPiece, Dir, File, Piece, Rank},
     masks::Mask,
     pieces::Micropawns,
     squares::Square,
@@ -33,14 +33,9 @@ impl Knights {
         &mut self.0
     }
 
-    pub fn render(&self, board: &mut BoardMap<char>, color: Color) {
-        let piece = match color {
-            Color::White => 'N',
-            Color::Black => 'n',
-        };
-
+    pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
         for sq in self.0.iter() {
-            board.set(sq, piece);
+            board.set(sq, Some(ColorPiece::new(color, Piece::Knight)));
         }
     }
 

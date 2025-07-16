@@ -4,7 +4,7 @@ use colored::Colorize;
 
 use crate::bitboard::{
     boardmap::BoardMap,
-    enums::{File, Rank, Shade},
+    enums::{Color, ColorPiece, File, Rank, Shade},
     masks::Mask,
     pieces::{bishops::Bishops, kings::Kings, knights::Knights, rooks::Rooks, slide_move_stop},
     squares::Square,
@@ -15,13 +15,15 @@ pub mod bitboard;
 fn main() {
     let board = bitboard::BitBoard::new();
 
-    let mut print = BoardMap::new_with(' ');
+    let mut print: BoardMap<Option<ColorPiece>> = BoardMap::new_with(None);
     let mut highlight = BoardMap::default();
 
     board.render(&mut print);
 
-    let mask = Rooks::NORTH.at(Square::at(File::G, Rank::_3));
-    let mask = slide_move_stop(true, mask, board.white.as_mask(), board.black.as_mask());
+    let mut moves = vec![];
+    board.generate_moves(&mut moves);
+
+    let mask: Mask = moves.into_iter().map(|mv| mv.from_to.to.as_mask()).sum();
 
     mask.render(&mut highlight);
 
@@ -33,7 +35,7 @@ fn sizeof_option_i32() {
     assert_eq!(std::mem::size_of::<Option<i32>>(), 8);
 }
 
-fn print_chessboard(pieces: &BoardMap<char>, highlights: &BoardMap<bool>) {
+fn print_chessboard(pieces: &BoardMap<Option<ColorPiece>>, highlights: &BoardMap<bool>) {
     let chessboard = [
         Rank::_8,
         Rank::_7,
@@ -48,17 +50,16 @@ fn print_chessboard(pieces: &BoardMap<char>, highlights: &BoardMap<bool>) {
         for sq in rank.as_mask().iter() {
             let piece = pieces.at(sq);
             let mut fg_color = match piece {
-                'A'..='Z' | ' ' => colored::Color::TrueColor {
+                Some(p) if p.color() == Color::White => colored::Color::TrueColor {
                     r: 0xFF,
                     g: 0xFF,
                     b: 0xFF,
                 },
-                'a'..='z' => colored::Color::TrueColor {
+                _ => colored::Color::TrueColor {
                     r: 0x00,
                     g: 0x00,
                     b: 0x00,
                 },
-                c => panic!("Not a recognized character {} \\u{:04X}", c, c as u32),
             };
 
             let bg_color = if highlights.at(sq) {
@@ -85,21 +86,10 @@ fn print_chessboard(pieces: &BoardMap<char>, highlights: &BoardMap<bool>) {
                 }
             };
 
-            let print_char = match piece {
-                'K' | 'k' => '\u{265A}',
-                'Q' | 'q' => '\u{265B}',
-                'R' | 'r' => '\u{265C}',
-                'B' | 'b' => '\u{265D}',
-                'N' | 'n' => '\u{265E}',
-                'P' | 'p' => '\u{265F}',
-                c => {
-                    fg_color = colored::Color::TrueColor {
-                        r: 0xFF,
-                        g: 0,
-                        b: 0,
-                    };
-                    c
-                }
+            let print_char = if let Some(piece) = piece {
+                piece.piece().black_unicode()
+            } else {
+                ' '
             };
 
             print!(

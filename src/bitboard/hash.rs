@@ -114,26 +114,14 @@ impl BitBoardHasher {
         }
     }
 
-    pub fn hash_a_move(&self, mut hash: HashResult, mv: Move) -> HashResult {
-        let Some(from_to) = mv.from_to else {
-            return 0;
-        };
-        let Some(color_and_piece) = mv.color_and_piece else {
-            return 0;
-        };
-
-        let (same, opposite) = match color_and_piece.color() {
+    pub fn hash_add_a_move(&self, mut hash: HashResult, mv: Move) -> HashResult {
+        let (same, opposite) = match mv.color_and_piece.color() {
             Color::White => (&self.white, &self.black),
             Color::Black => (&self.black, &self.white),
         };
 
-        let mut res = same.hash_piece(color_and_piece.piece(), from_to.from)
-            ^ same.hash_piece(color_and_piece.piece(), from_to.to);
-
-        let en_passant_possible = mv.en_passant_square().is_some();
-        if en_passant_possible != mv.en_passant_last_turn {
-            res ^= self.en_passant_possible
-        }
+        let mut res = same.hash_piece(mv.color_and_piece.piece(), mv.from_to.from)
+            ^ same.hash_piece(mv.color_and_piece.piece(), mv.from_to.to);
 
         match mv.castling {
             Some(CastlingSide::OOO) => res ^= same.castling.ooo,

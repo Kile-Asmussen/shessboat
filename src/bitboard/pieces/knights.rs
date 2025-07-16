@@ -31,6 +31,10 @@ impl Knights {
         self.0
     }
 
+    pub const fn captured(&self, sq: Square) -> Self {
+        Self(self.as_mask().unset(sq))
+    }
+
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
         for sq in self.0.iter() {
             board.set(sq, Some(ColorPiece::new(color, Piece::Knight)));

@@ -68,13 +68,16 @@ impl HalfBitBoard {
         }
     }
 
-    pub fn threats(&self, color: Color, opposite: Mask) -> Mask {
+    pub fn threats(&self, color: Color, opposite: Mask, capture: Option<(Square, Piece)>) -> Mask {
         let same = self.as_mask();
-        self.kings.threats(same)
-            | self.queens.threats(Rooks::nil(), Bishops::nil(), same, opposite)
-            | self.rooks.threats(Queens::nil(), same, opposite)
-            | self.bishops.threats(Queens::nil(), same, opposite)
-            | self.knights.threats(same)
-            | self.pawns.threats(color, same)
+
+        let king = self.kings.threats(same);
+        let queen = self.queens.threats(Rooks::nil(), Bishops::nil(), same, opposite);
+        let rook = self.rooks.threats(Queens::nil(), same, opposite);
+        let bishop = self.bishops.threats(Queens::nil(), same, opposite);
+        let knight = self.knights.threats(same);
+        let pawn = self.pawns.threats(color, same);
+
+        king | queen | rook | bishop | knight | pawn
     }
 }

@@ -42,7 +42,7 @@ impl ProtoMove {
         passive_color: Color,
     ) -> bool {
         passive
-            .threats(passive_color, active ^ self.as_mask())
+            .threats(passive_color, active ^ self.as_mask(), capture)
             .overlap(king.as_mask())
             .any()
     }

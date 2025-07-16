@@ -21,10 +21,13 @@ fn main() {
     let mut print: BoardMap<Option<ColorPiece>> = BoardMap::new_with(None);
     let mut highlight = BoardMap::default();
 
-    board.render(&mut print);
+    board.metadata.to_move = Color::Black;
+    board.black.pawns = Pawns::nil();
 
     let mut moves = vec![];
     board.generate_moves(&mut moves);
+
+    board.render(&mut print);
 
     // let mask: Mask = board.white.threats(Color::White, board.black.as_mask());
 

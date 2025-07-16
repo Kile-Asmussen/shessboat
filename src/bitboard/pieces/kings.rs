@@ -29,6 +29,10 @@ impl Kings {
         self.0
     }
 
+    pub const fn mut_mask(&mut self) -> &mut Mask {
+        &mut self.0
+    }
+
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
         for sq in self.0.iter() {
             board.set(sq, Some(ColorPiece::new(color, Piece::King)));
@@ -83,7 +87,7 @@ impl Kings {
     }
 
     pub fn threats(&self, same: Mask) -> Mask {
-        Self::MOVES.overlap(self.as_mask()) & !same
+        Self::MOVES.overlap(self.0) & !same
     }
 
     pub fn enumerate_legal_moves(
@@ -95,17 +99,17 @@ impl Kings {
     ) {
         let color_and_piece = ColorPiece::new(color, Piece::King);
 
-        if !self.as_mask().any() {
+        if !self.0.any() {
             return;
         }
 
-        for from in self.as_mask() {
+        for from in self.0 {
             let possible = Kings::MOVES.at(from) & !active_mask;
 
             for to in possible {
                 let from_to = ProtoMove { from, to };
 
-                let capture = passive.piece(to).map(|p| (to, p));
+                let capture = passive.piece_at(to).map(|p| (to, p));
 
                 if from_to.makes_king_checked(active_mask, *self, capture, passive, color.other()) {
                     continue;

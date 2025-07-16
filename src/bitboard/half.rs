@@ -49,7 +49,31 @@ impl HalfBitBoard {
             | self.pawns.as_mask()
     }
 
-    pub fn piece(&self, sq: Square) -> Option<Piece> {
+    pub fn piece_mask(&self, piece: Piece) -> Mask {
+        match piece {
+            Piece::Pawn => self.pawns.as_mask(),
+            Piece::Knight => self.knights.as_mask(),
+            Piece::Bishop => self.bishops.as_mask(),
+            Piece::Rook => self.rooks.as_mask(),
+            Piece::Queen => self.queens.as_mask(),
+            Piece::King => self.kings.as_mask(),
+        }
+    }
+
+    pub fn piece_mask_mut(&mut self, piece: Piece) -> &mut Mask {
+        match piece {
+            Piece::Pawn => self.pawns.mut_mask(),
+            Piece::Knight => self.knights.mut_mask(),
+            Piece::Bishop => self.bishops.mut_mask(),
+            Piece::Rook => self.rooks.mut_mask(),
+            Piece::Queen => self.queens.mut_mask(),
+            Piece::King => self.kings.mut_mask(),
+        }
+    }
+
+    pub fn delete(&mut self, sq: Square) {}
+
+    pub fn piece_at(&self, sq: Square) -> Option<Piece> {
         let sq = sq.as_mask();
         if self.kings.as_mask().overlap(sq).any() {
             Some(Piece::King)

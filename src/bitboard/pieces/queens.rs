@@ -37,6 +37,10 @@ impl Queens {
         self.0
     }
 
+    pub const fn mut_mask(&mut self) -> &mut Mask {
+        &mut self.0
+    }
+
     pub const fn captured(&self, cap: Option<(Square, Piece)>) -> Self {
         if let Some((sq, Piece::Queen)) = cap {
             Self(self.as_mask().unset(sq))
@@ -139,7 +143,7 @@ impl Queens {
             for to in possible {
                 let from_to = ProtoMove { from, to };
 
-                let capture = passive.piece(to).map(|p| (to, p));
+                let capture = passive.piece_at(to).map(|p| (to, p));
 
                 if from_to.makes_king_checked(active_mask, kings, capture, passive, color.other()) {
                     continue;

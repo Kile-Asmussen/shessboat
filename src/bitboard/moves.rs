@@ -1,3 +1,4 @@
+use core::panic::PanicMessage;
 use std::fmt::Display;
 
 use crate::bitboard::{
@@ -9,7 +10,7 @@ use crate::bitboard::{
     pieces::{
         kings::Kings,
         knights::{self, Knights},
-        pawns::Pawns,
+        pawns::{self, Pawns},
     },
     squares::Square,
 };
@@ -115,8 +116,12 @@ fn size_fuckery() {
 }
 
 impl BitBoard {
-    pub fn apply(&mut self, mv: &Move) -> bool {
-        todo!()
+    pub fn apply(&mut self, mv: &Move) {
+        let (active, passive) = self.color_mut(mv.color_and_piece.color());
+        *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
+        if let Some((sq, piece)) = mv.capture {
+            *passive.piece_mask_mut(piece) ^= sq.as_mask();
+        }
     }
 
     pub fn generate_moves(&self, res: &mut Vec<Move>) {

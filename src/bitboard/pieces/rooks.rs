@@ -10,7 +10,7 @@ use crate::bitboard::{
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(transparent)]
-pub struct Rooks(Mask);
+pub struct Rooks(pub Mask);
 
 impl Rooks {
     pub const fn nil() -> Self {
@@ -21,17 +21,21 @@ impl Rooks {
         Self(mask)
     }
 
-    pub const fn materiel(&self) -> Micropawns {
-        self.0.occupied() as i64 * 5_000_000
-    }
-
     pub const fn as_mask(&self) -> Mask {
         self.0
     }
 
+    pub const fn mut_mask(&mut self) -> &mut Mask {
+        &mut self.0
+    }
+
+    pub const fn materiel(&self) -> Micropawns {
+        self.0.occupied() as i64 * 5_000_000
+    }
+
     pub const fn captured(&self, cap: Option<(Square, Piece)>) -> Self {
         if let Some((sq, Piece::Rook)) = cap {
-            Self(self.as_mask().unset(sq))
+            Self(self.0.unset(sq))
         } else {
             *self
         }
@@ -62,11 +66,11 @@ impl Rooks {
     ) {
         let color_and_piece = ColorPiece::new(color, Piece::Rook);
 
-        if !self.as_mask().any() {
+        if !self.0.any() {
             return;
         }
 
-        for from in self.as_mask() {
+        for from in self.0 {
             let possible = slide_move_stop(true, Queens::NORTH.at(from), active_mask, passive_mask)
                 | slide_move_stop(true, Queens::EAST.at(from), active_mask, passive_mask)
                 | slide_move_stop(false, Queens::SOUTH.at(from), active_mask, passive_mask)
@@ -75,7 +79,7 @@ impl Rooks {
             for to in possible {
                 let from_to = ProtoMove { from, to };
 
-                let capture = passive.piece(to).map(|p| (to, p));
+                let capture = passive.piece_at(to).map(|p| (to, p));
 
                 if from_to.makes_king_checked(active_mask, kings, capture, passive, color.other()) {
                     continue;

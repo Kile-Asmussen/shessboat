@@ -29,6 +29,10 @@ impl Pawns {
         self.0
     }
 
+    pub const fn mut_mask(&mut self) -> &mut Mask {
+        &mut self.0
+    }
+
     pub const fn captured(&self, cap: Option<(Square, Piece)>) -> Self {
         if let Some((sq, Piece::Pawn)) = cap {
             Self(self.as_mask().unset(sq))
@@ -151,7 +155,7 @@ impl Pawns {
             for to in possible_attacks {
                 let from_to = ProtoMove { from, to };
 
-                let Some(capture) = passive.piece(to) else {
+                let Some(capture) = passive.piece_at(to) else {
                     continue;
                 };
                 let capture = Some((to, capture));

@@ -69,11 +69,22 @@ impl BitBoard {
         self.white.as_mask() | self.black.as_mask()
     }
 
-    pub fn active(&self) -> &HalfBitBoard {
-        match self.metadata.to_move {
+    pub fn color(&self, color: Color) -> &HalfBitBoard {
+        match color {
             Color::White => &self.white,
             Color::Black => &self.black,
         }
+    }
+
+    pub fn color_mut(&mut self, color: Color) -> (&mut HalfBitBoard, &mut HalfBitBoard) {
+        match color {
+            Color::White => (&mut self.white, &mut self.black),
+            Color::Black => (&mut self.black, &mut self.white),
+        }
+    }
+
+    pub fn active(&self) -> &HalfBitBoard {
+        self.color(self.metadata.to_move)
     }
 
     pub fn passive(&self) -> &HalfBitBoard {

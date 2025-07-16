@@ -49,7 +49,6 @@ impl BitBoard {
         board[48..56].fill(Some(ColorPiece::BlackPawn));
 
         let mut board = BoardMap::new(board);
-
         return Self::new_board(&board);
     }
 

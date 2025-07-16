@@ -237,18 +237,26 @@ impl Piece {
 #[repr(i32)]
 pub enum Dir {
     North = 1,
+    NorthEast,
     East,
+    SouthEast,
     South,
+    SouthWest,
     West,
+    NorthWest,
 }
 
 impl Dir {
-    pub const fn as_offset(&self) -> i8 {
+    pub const fn as_offset(&self) -> (i8, i8) {
         match self {
-            Dir::North => 8,
-            Dir::East => 1,
-            Dir::South => -8,
-            Dir::West => -1,
+            Dir::North => (0, 1),
+            Dir::NorthEast => (1, 1),
+            Dir::East => (1, 0),
+            Dir::SouthEast => (1, -1),
+            Dir::South => (0, -1),
+            Dir::SouthWest => (-1, -1),
+            Dir::West => (-1, 0),
+            Dir::NorthWest => (-1, 1),
         }
     }
 }

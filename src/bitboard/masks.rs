@@ -1,7 +1,7 @@
 use std::{
     fmt::Debug,
     iter::{Product, Sum},
-    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, Not},
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not},
 };
 
 use crate::bitboard::{
@@ -27,17 +27,6 @@ impl Mask {
 
     pub const fn full() -> Self {
         Mask(u64::MAX)
-    }
-
-    pub const fn from_board_map_bool(b: &BoardMap<bool>) -> Self {
-        let mut res = Mask::nil();
-        let mut b = b.iter();
-        while let Some((sq, x)) = b.next() {
-            if x {
-                res.set(sq);
-            }
-        }
-        res
     }
 
     pub const fn new(x: u64) -> Self {
@@ -135,6 +124,20 @@ impl BitAnd for Mask {
 impl BitAndAssign for Mask {
     fn bitand_assign(&mut self, rhs: Self) {
         self.0 &= rhs.0
+    }
+}
+
+impl BitXor for Mask {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self(self.0 ^ rhs.0)
+    }
+}
+
+impl BitXorAssign for Mask {
+    fn bitxor_assign(&mut self, rhs: Self) {
+        self.0 ^= rhs.0
     }
 }
 

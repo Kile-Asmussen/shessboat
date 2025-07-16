@@ -3,7 +3,7 @@ use std::ops::Index;
 use rand::Fill;
 
 use crate::bitboard::{
-    enums::ColorPiece,
+    enums::{ColorPiece, File, Rank},
     masks::{Mask, SquareIter},
     squares::Square,
 };
@@ -46,13 +46,26 @@ impl BoardMap<Mask> {
     }
 }
 
+impl BoardMap<bool> {
+    pub const fn to_mask(&self) -> Mask {
+        let mut res = Mask::nil();
+        let mut it = self.iter();
+        while let Some((sq, x)) = it.next() {
+            if x {
+                res = res.set(sq);
+            }
+        }
+        res
+    }
+}
+
 impl BoardMap<char> {
     pub const fn to_mask(&self, c: char) -> Mask {
         let mut res = Mask::nil();
         let mut it = self.iter();
         while let Some((sq, x)) = it.next() {
             if c == x {
-                res.set(sq);
+                res = res.set(sq);
             }
         }
         res
@@ -60,18 +73,26 @@ impl BoardMap<char> {
 }
 
 impl BoardMap<Option<ColorPiece>> {
-    pub const fn to_mask(&self, c: Option<ColorPiece>) -> Mask {
+    pub const fn to_mask(&self, c: ColorPiece) -> Mask {
         let mut res = Mask::nil();
         let mut it = self.iter();
         while let Some((sq, x)) = it.next() {
-            if let (Some(c), Some(x)) = (c, x) {
+            if let Some(x) = x {
                 if c as u8 == x as u8 {
-                    res.set(sq);
+                    res = res.set(sq);
                 }
             }
         }
         res
     }
+}
+
+#[test]
+fn why_u_no_worky() {
+    let mut x = BoardMap::new_with(None);
+    x.set(Square::at(File::A, Rank::_1), Some(ColorPiece::WhiteKing));
+
+    assert_eq!(x.to_mask(ColorPiece::WhiteKing), Mask::new(1));
 }
 
 impl<T> Fill for BoardMap<T>

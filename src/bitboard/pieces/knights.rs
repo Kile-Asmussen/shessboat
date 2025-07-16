@@ -29,10 +29,6 @@ impl Knights {
         self.0
     }
 
-    pub const fn mut_mask(&mut self) -> &mut Mask {
-        &mut self.0
-    }
-
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
         for sq in self.0.iter() {
             board.set(sq, Some(ColorPiece::new(color, Piece::Knight)));
@@ -55,14 +51,14 @@ impl Knights {
     pub const fn moves_from(sq: Square) -> Mask {
         use Dir::*;
         return Mask::new(
-            x(sq.goes([North, North, East]))
-                | x(sq.goes([North, North, West]))
-                | x(sq.goes([East, East, South]))
-                | x(sq.goes([East, East, North]))
-                | x(sq.goes([South, South, West]))
-                | x(sq.goes([South, South, East]))
-                | x(sq.goes([West, West, North]))
-                | x(sq.goes([West, West, South])),
+            x(sq.goes([North, NorthEast]))
+                | x(sq.goes([North, NorthWest]))
+                | x(sq.goes([East, SouthEast]))
+                | x(sq.goes([East, NorthEast]))
+                | x(sq.goes([South, SouthWest]))
+                | x(sq.goes([South, SouthEast]))
+                | x(sq.goes([West, NorthWest]))
+                | x(sq.goes([West, SouthWest])),
         );
 
         const fn x(sq: Option<Square>) -> u64 {
@@ -71,6 +67,10 @@ impl Knights {
             };
             sq.as_mask().as_u64()
         }
+    }
+
+    pub fn threats(&self, same: Mask) -> Mask {
+        Self::MOVES.overlap(self.as_mask()) & !same
     }
 }
 

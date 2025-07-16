@@ -26,9 +26,7 @@ impl ProtoMove {
     }
 
     pub fn as_mask(&self) -> Mask {
-        let mut res = Mask::nil();
-        res.set(self.from).set(self.to);
-        res
+        Mask::nil().set(self.from).set(self.to)
     }
 }
 

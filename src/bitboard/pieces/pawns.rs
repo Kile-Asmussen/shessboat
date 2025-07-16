@@ -27,10 +27,6 @@ impl Pawns {
         self.0
     }
 
-    pub const fn mut_mask(&mut self) -> &mut Mask {
-        &mut self.0
-    }
-
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
         for sq in self.0.iter() {
             board.set(sq, Some(ColorPiece::new(color, Piece::Pawn)));
@@ -80,5 +76,13 @@ impl Pawns {
             };
             sq.as_mask().as_u64()
         }
+    }
+
+    pub fn threats(&self, color: Color, same: Mask) -> Mask {
+        let threat_masks = match color {
+            Color::White => &Self::WHITE_THREATS,
+            Color::Black => &Self::BLACK_THREATS,
+        };
+        threat_masks.overlap(self.as_mask())
     }
 }

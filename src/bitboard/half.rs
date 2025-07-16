@@ -1,6 +1,6 @@
 use crate::bitboard::{
     boardmap::BoardMap,
-    enums::{Color, ColorPiece, Piece},
+    enums::{Color, ColorPiece, Dir, Piece},
     masks::Mask,
     pieces::{
         bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
@@ -22,12 +22,12 @@ pub struct HalfBitBoard {
 impl HalfBitBoard {
     pub fn new(board: &BoardMap<Option<ColorPiece>>, c: Color) -> Self {
         Self {
-            kings: Kings::new(board.to_mask(Some(ColorPiece::new(c, Piece::King)))),
-            queens: Queens::new(board.to_mask(Some(ColorPiece::new(c, Piece::Queen)))),
-            rooks: Rooks::new(board.to_mask(Some(ColorPiece::new(c, Piece::Rook)))),
-            bishops: Bishops::new(board.to_mask(Some(ColorPiece::new(c, Piece::Bishop)))),
-            knights: Knights::new(board.to_mask(Some(ColorPiece::new(c, Piece::Knight)))),
-            pawns: Pawns::new(board.to_mask(Some(ColorPiece::new(c, Piece::Pawn)))),
+            kings: Kings::new(board.to_mask(ColorPiece::new(c, Piece::King))),
+            queens: Queens::new(board.to_mask(ColorPiece::new(c, Piece::Queen))),
+            rooks: Rooks::new(board.to_mask(ColorPiece::new(c, Piece::Rook))),
+            bishops: Bishops::new(board.to_mask(ColorPiece::new(c, Piece::Bishop))),
+            knights: Knights::new(board.to_mask(ColorPiece::new(c, Piece::Knight))),
+            pawns: Pawns::new(board.to_mask(ColorPiece::new(c, Piece::Pawn))),
         }
     }
 

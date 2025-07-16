@@ -15,7 +15,7 @@ pub struct Square(NonZeroI8);
 impl Debug for Square {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (file, rank) = self.algebraic();
-        write!(f, "Square::at(File::{:?}, Rank::{:?})", file, rank)
+        write!(f, "Square::at(File::{file:?}, Rank::{rank:?})")
     }
 }
 
@@ -52,8 +52,8 @@ impl Square {
 
     pub const fn algebraic(&self) -> (File, Rank) {
         (
-            File::file(self.index() / 8).unwrap(),
-            Rank::rank(self.index() % 8).unwrap(),
+            File::file(self.index() % 8).unwrap(),
+            Rank::rank(self.index() / 8).unwrap(),
         )
     }
 
@@ -69,12 +69,12 @@ impl Square {
 
     pub const fn go(&self, dir: Dir) -> Option<Self> {
         let val = self.index();
-        let dir = dir.as_offset();
-        let file = match val % 8 + dir % 8 {
+        let (f, r) = dir.as_offset();
+        let file = match val % 8 + f {
             f @ 0..=7 => f,
             _ => return None,
         };
-        let rank = match val / 8 + dir / 8 {
+        let rank = match val / 8 + r {
             r @ 0..=7 => r,
             _ => return None,
         };
@@ -102,6 +102,18 @@ impl Square {
 }
 
 #[test]
+fn why_u_no_worky() {
+    use File::*;
+    use Rank::*;
+    let at = Square::at;
+    assert_eq!(at(A, _1).index(), 0);
+    assert_eq!(at(A, _8).index(), 56);
+    assert_eq!(at(B, _7).index(), 49);
+
+    assert_eq!(at(C, _5).algebraic(), (C, _5));
+}
+
+#[test]
 fn moves() {
     use Dir::*;
     use File::*;
@@ -113,11 +125,20 @@ fn moves() {
         Some(at(A, _7)),
         "west form a8 should be a7"
     );
+
     assert_eq!(at(A, _8).go(North), None, "no north from a8");
+
     assert_eq!(
         at(A, _8).go(East),
         Some(at(B, _8)),
         "east from a8 should be b8"
     );
+
     assert_eq!(at(A, _8).go(West), None, "no west from a8");
+
+    assert_eq!(
+        at(A, _8).go(SouthEast),
+        Some(at(B, _7)),
+        "southeast from a8 is b7"
+    )
 }

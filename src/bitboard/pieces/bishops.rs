@@ -34,8 +34,12 @@ impl Bishops {
         self.0
     }
 
-    pub const fn captured(&self, sq: Square) -> Self {
-        Self(self.as_mask().unset(sq))
+    pub const fn captured(&self, cap: Option<(Square, Piece)>) -> Self {
+        if let Some((sq, Piece::Bishop)) = cap {
+            Self(self.as_mask().unset(sq))
+        } else {
+            *self
+        }
     }
 
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {

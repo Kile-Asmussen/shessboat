@@ -16,6 +16,31 @@ impl Color {
             Color::Black => p.letter().to_ascii_lowercase(),
         }
     }
+
+    pub const fn as_mask(&self) -> Mask {
+        match self {
+            Self::White => Mask::board([
+                0b_00000000,
+                0b_00000000,
+                0b_00000000,
+                0b_00000000,
+                0b_00000000,
+                0b_00000000,
+                0b_11111111,
+                0b_11111111,
+            ]),
+            Self::Black => Mask::board([
+                0b_11111111,
+                0b_11111111,
+                0b_00000000,
+                0b_00000000,
+                0b_00000000,
+                0b_00000000,
+                0b_00000000,
+                0b_00000000,
+            ]),
+        }
+    }
 }
 
 #[rustfmt::skip]

@@ -21,7 +21,7 @@ fn main() {
     board.render(&mut print);
 
     let mask = Rooks::NORTH.at(Square::at(File::G, Rank::_3));
-    let mask = slide_move_stop(true, mask, board.white().as_mask(), board.black().as_mask());
+    let mask = slide_move_stop(true, mask, board.white.as_mask(), board.black.as_mask());
 
     mask.render(&mut highlight);
 

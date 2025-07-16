@@ -10,12 +10,12 @@ use crate::bitboard::{
 
 #[derive(Clone, Debug)]
 pub struct HalfBitBoard {
-    kings: Kings,
-    queens: Queens,
-    rooks: Rooks,
-    bishops: Bishops,
-    knights: Knights,
-    pawns: Pawns,
+    pub kings: Kings,
+    pub queens: Queens,
+    pub rooks: Rooks,
+    pub bishops: Bishops,
+    pub knights: Knights,
+    pub pawns: Pawns,
 }
 
 impl HalfBitBoard {
@@ -46,29 +46,5 @@ impl HalfBitBoard {
             | self.bishops.as_mask()
             | self.knights.as_mask()
             | self.pawns.as_mask()
-    }
-
-    pub fn kings(&self) -> Kings {
-        self.kings
-    }
-
-    pub fn queens(&self) -> Queens {
-        self.queens
-    }
-
-    pub fn rooks(&self) -> Rooks {
-        self.rooks
-    }
-
-    pub fn bishops(&self) -> Bishops {
-        self.bishops
-    }
-
-    pub fn knights(&self) -> Knights {
-        self.knights
-    }
-
-    pub fn pawns(&self) -> Pawns {
-        self.pawns
     }
 }

@@ -44,6 +44,17 @@ impl Kings {
 
     const MOVES: BoardMap<Mask> = Self::build_move_db();
 
+    const CASTLING: [u8; 8] = [
+        0b_01100000,
+        0b_10110000,
+        0b_11011000,
+        0b_01101100,
+        0b_00110110,
+        0b_00011011,
+        0b_00001101,
+        0b_00000110,
+    ];
+
     const fn build_move_db() -> BoardMap<Mask> {
         let mut n = 0;
         let mut res = [Mask::new(0); 64];
@@ -59,6 +70,7 @@ impl Kings {
 
     pub const fn moves_from(sq: Square) -> Mask {
         use Dir::*;
+        let x = Self::x;
         return Mask::new(
             x(sq.go(North))
                 | x(sq.go(East))
@@ -69,12 +81,12 @@ impl Kings {
                 | x(sq.goes([South, West]))
                 | x(sq.goes([North, West])),
         );
+    }
 
-        const fn x(sq: Option<Square>) -> u64 {
-            let Some(sq) = sq else {
-                return 0u64;
-            };
-            sq.as_mask().as_u64()
-        }
+    const fn x(sq: Option<Square>) -> u64 {
+        let Some(sq) = sq else {
+            return 0u64;
+        };
+        sq.as_mask().as_u64()
     }
 }

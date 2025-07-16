@@ -1,8 +1,18 @@
+use std::fmt::Binary;
+
 use crate::bitboard::{
     boardmap::BoardMap,
     enums::{Color, ColorPiece, Dir, Piece},
+    half::HalfBitBoard,
     masks::Mask,
-    pieces::{Micropawns, slide_move_stop},
+    moves::{Move, ProtoMove},
+    pieces::{
+        Micropawns,
+        bishops::{self, Bishops},
+        kings::Kings,
+        rooks::Rooks,
+        slide_move_stop,
+    },
     squares::Square,
 };
 
@@ -64,8 +74,17 @@ impl Queens {
         res
     }
 
-    pub fn threats(&self, same: Mask, opposite: Mask) -> Mask {
-        Self::directional_threats(self.as_mask(), positive, same, opposite)
+    pub fn threats(&self, rooks: Rooks, bishops: Bishops, same: Mask, opposite: Mask) -> Mask {
+        let bmask = self.as_mask() | bishops.as_mask();
+        let rmask = self.as_mask() | rooks.as_mask();
+        Self::directional_threats(bmask, &Self::NORTHWEST, true, same, opposite)
+            | Self::directional_threats(rmask, &Self::NORTH, true, same, opposite)
+            | Self::directional_threats(bmask, &Self::NORTHEAST, true, same, opposite)
+            | Self::directional_threats(rmask, &Self::EAST, true, same, opposite)
+            | Self::directional_threats(bmask, &Self::SOUTHEAST, false, same, opposite)
+            | Self::directional_threats(rmask, &Self::SOUTH, false, same, opposite)
+            | Self::directional_threats(bmask, &Self::SOUTHWEST, false, same, opposite)
+            | Self::directional_threats(rmask, &Self::WEST, false, same, opposite)
     }
 
     pub fn directional_threats(
@@ -76,10 +95,56 @@ impl Queens {
         opposite: Mask,
     ) -> Mask {
         let mut res = Mask::nil();
-        for sq in self.as_mask() {
+        for sq in pieces {
             let move_mask = move_masks.at(sq);
             res |= slide_move_stop(positive, move_mask, same, opposite);
         }
         res
+    }
+
+    pub fn enumerate_legal_moves(
+        &self,
+        color: Color,
+        active_mask: Mask,
+        passive: &HalfBitBoard,
+        passive_mask: Mask,
+        kings: Kings,
+        res: &mut Vec<Move>,
+    ) {
+        let color_and_piece = ColorPiece::new(color, Piece::Queen);
+
+        if !self.as_mask().any() {
+            return;
+        }
+
+        for from in self.as_mask() {
+            let possible =
+                slide_move_stop(true, Queens::NORTHWEST.at(from), active_mask, passive_mask)
+                    | slide_move_stop(true, Queens::NORTH.at(from), active_mask, passive_mask)
+                    | slide_move_stop(true, Queens::NORTHEAST.at(from), active_mask, passive_mask)
+                    | slide_move_stop(true, Queens::EAST.at(from), active_mask, passive_mask)
+                    | slide_move_stop(false, Queens::SOUTHEAST.at(from), active_mask, passive_mask)
+                    | slide_move_stop(false, Queens::SOUTH.at(from), active_mask, passive_mask)
+                    | slide_move_stop(false, Queens::SOUTHWEST.at(from), active_mask, passive_mask)
+                    | slide_move_stop(false, Queens::WEST.at(from), active_mask, passive_mask);
+
+            for to in possible {
+                let from_to = ProtoMove { from, to };
+
+                let capture = passive.piece(to).map(|p| (to, p));
+
+                if from_to.makes_king_checked(active_mask, kings, capture, passive, color.other()) {
+                    continue;
+                }
+
+                res.push(Move {
+                    color_and_piece,
+                    from_to,
+                    capture,
+                    castling: None,
+                    promotion: None,
+                });
+            }
+        }
     }
 }

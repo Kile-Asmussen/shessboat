@@ -1,8 +1,10 @@
 use crate::bitboard::{
     boardmap::BoardMap,
     enums::{Color, ColorPiece, Dir, Piece, Rank},
+    half::HalfBitBoard,
     masks::Mask,
-    pieces::Micropawns,
+    moves::{Move, ProtoMove},
+    pieces::{Micropawns, kings::Kings, queens::Queens},
     squares::Square,
 };
 
@@ -60,7 +62,7 @@ impl Pawns {
             panic!();
         }
 
-        let moves = if let (_, Rank::_2 | Rank::_7) = sq.algebraic() {
+        let moves = if let Rank::_2 | Rank::_7 = sq.rank() {
             Mask::new(x(sq.go(dir)) | x(sq.goes([dir, dir])))
         } else {
             Mask::new(x(sq.go(dir)))
@@ -84,5 +86,122 @@ impl Pawns {
             Color::Black => &Self::BLACK_THREATS,
         };
         threat_masks.overlap(self.as_mask())
+    }
+
+    pub const fn promotion_rank(color: Color) -> Rank {
+        match color {
+            Color::White => Rank::_8,
+            Color::Black => Rank::_1,
+        }
+    }
+
+    pub fn enumerate_legal_moves(
+        &self,
+        color: Color,
+        active_mask: Mask,
+        passive_mask: Mask,
+        passive: &HalfBitBoard,
+        en_passant: Option<(Square, Square)>,
+        kings: Kings,
+        res: &mut Vec<Move>,
+    ) {
+        let color_and_piece = ColorPiece::new(color, Piece::Pawn);
+
+        if !self.as_mask().any() {
+            return;
+        }
+
+        #[allow(non_snake_case)]
+        let (MOVES, THREATS) = match color {
+            Color::White => (&Self::WHITE_MOVES, &Self::WHITE_THREATS),
+            Color::Black => (&Self::WHITE_MOVES, &Self::WHITE_THREATS),
+        };
+
+        for from in self.as_mask() {
+            let possible_moves = MOVES.at(from) & !active_mask;
+
+            for to in possible_moves {
+                let from_to = ProtoMove { from, to };
+                if from_to.makes_king_checked(active_mask, kings, None, passive, color.other()) {
+                    continue;
+                }
+
+                promotions(
+                    res,
+                    Move {
+                        color_and_piece,
+                        from_to,
+                        castling: None,
+                        capture: None,
+                        promotion: None,
+                    },
+                );
+            }
+
+            let possible_attacks = THREATS.at(from) & passive_mask;
+
+            for to in possible_attacks {
+                let from_to = ProtoMove { from, to };
+
+                let Some(capture) = passive.piece(to) else {
+                    continue;
+                };
+                let capture = Some((to, capture));
+
+                if from_to.makes_king_checked(active_mask, kings, capture, passive, color.other()) {
+                    continue;
+                }
+
+                promotions(
+                    res,
+                    Move {
+                        color_and_piece,
+                        from_to,
+                        castling: None,
+                        capture,
+                        promotion: None,
+                    },
+                );
+            }
+
+            if let Some((to, pawn)) = en_passant {
+                'out: {
+                    if possible_attacks.contains(to) {
+                        let from_to = ProtoMove { from, to };
+
+                        let capture = Some((pawn, Piece::Pawn));
+
+                        if from_to.makes_king_checked(
+                            active_mask,
+                            kings,
+                            capture,
+                            passive,
+                            color.other(),
+                        ) {
+                            break 'out;
+                        }
+
+                        res.push(Move {
+                            color_and_piece,
+                            from_to,
+                            castling: None,
+                            capture,
+                            promotion: None,
+                        })
+                    }
+                }
+            }
+        }
+
+        fn promotions(res: &mut Vec<Move>, mut mv: Move) {
+            if mv.from_to.to.rank() == Pawns::promotion_rank(mv.color_and_piece.color()) {
+                for piece in [Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight] {
+                    mv.promotion = Some(piece);
+                    res.push(mv);
+                }
+            } else {
+                res.push(mv);
+            }
+        }
     }
 }

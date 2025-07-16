@@ -51,10 +51,15 @@ impl Square {
     }
 
     pub const fn algebraic(&self) -> (File, Rank) {
-        (
-            File::file(self.index() % 8).unwrap(),
-            Rank::rank(self.index() / 8).unwrap(),
-        )
+        (self.file(), self.rank())
+    }
+
+    pub const fn rank(&self) -> Rank {
+        Rank::rank(self.index() / 8).unwrap()
+    }
+
+    pub const fn file(&self) -> File {
+        File::file(self.index() % 8).unwrap()
     }
 
     pub const fn at(file: File, rank: Rank) -> Self {

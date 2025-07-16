@@ -1,9 +1,13 @@
+use std::fmt::Display;
+
 use crate::bitboard::{
     BitBoard, CastlingInfo,
     castling::CastlingSide,
     enums::{Color, ColorPiece, Dir, Piece, Rank},
+    half::HalfBitBoard,
     masks::Mask,
     pieces::{
+        kings::Kings,
         knights::{self, Knights},
         pawns::Pawns,
     },
@@ -28,6 +32,26 @@ impl ProtoMove {
     pub fn as_mask(&self) -> Mask {
         Mask::nil().set(self.from).set(self.to)
     }
+
+    pub fn makes_king_checked(
+        &self,
+        active: Mask,
+        king: Kings,
+        capture: Option<(Square, Piece)>,
+        passive: &HalfBitBoard,
+        passive_color: Color,
+    ) -> bool {
+        passive
+            .threats(passive_color, active ^ self.as_mask())
+            .overlap(king.as_mask())
+            .any()
+    }
+}
+
+impl Display for ProtoMove {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.from, self.to)
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -36,23 +60,22 @@ pub struct Move {
     pub from_to: ProtoMove,
     pub castling: Option<CastlingSide>,
     pub capture: Option<(Square, Piece)>,
-    pub en_passant_last_turn: bool,
     pub promotion: Option<Piece>,
 }
 
 impl Move {
     pub fn en_passant_square(&self) -> Option<Square> {
         if self.color_and_piece == ColorPiece::WhitePawn {
-            if let ((f, Rank::_2), (_, Rank::_4)) =
-                (self.from_to.from.algebraic(), self.from_to.to.algebraic())
+            if let ((f, Rank::_2), Rank::_4) =
+                (self.from_to.from.algebraic(), self.from_to.to.rank())
             {
                 return Some(Square::at(f, Rank::_3));
             } else {
                 return None;
             };
         } else if self.color_and_piece == ColorPiece::BlackPawn {
-            if let ((f, Rank::_7), (_, Rank::_5)) =
-                (self.from_to.from.algebraic(), self.from_to.to.algebraic())
+            if let ((f, Rank::_7), Rank::_5) =
+                (self.from_to.from.algebraic(), self.from_to.to.rank())
             {
                 return Some(Square::at(f, Rank::_6));
             } else {
@@ -61,6 +84,27 @@ impl Move {
         } else {
             return None;
         }
+    }
+}
+
+impl Display for Move {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.color_and_piece.unicode(), self.from_to)?;
+        if let Some((sq, p)) = self.capture {
+            write!(
+                f,
+                "\u{00D7}{}{}",
+                ColorPiece::new(self.color_and_piece.color().other(), p).unicode(),
+                sq
+            )?;
+        }
+        if let Some(c) = self.castling {
+            match c {
+                CastlingSide::OOO => write!(f, "O-O-O")?,
+                CastlingSide::OO => write!(f, "O-O")?,
+            }
+        }
+        Ok(())
     }
 }
 
@@ -76,39 +120,57 @@ impl BitBoard {
     }
 
     pub fn generate_moves(&self, res: &mut Vec<Move>) {
-        self.generate_knight_moves(res);
-    }
+        let active_mask = self.active().as_mask();
+        let passive_mask = self.passive().as_mask();
+        let color = self.metadata.to_move;
 
-    pub fn generate_knight_moves(&self, res: &mut Vec<Move>) {
-        let color_and_piece = ColorPiece::new(self.metadata.to_move, Piece::Knight);
+        self.active().queens.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            passive_mask,
+            self.active().kings,
+            res,
+        );
 
-        let active = self.active();
-        let passive = self.passive();
+        self.active().rooks.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            passive_mask,
+            self.active().kings,
+            res,
+        );
 
-        let excluded = active.as_mask();
+        self.active().bishops.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            passive_mask,
+            self.active().kings,
+            res,
+        );
 
-        let knights = active.knights.as_mask();
+        self.active().knights.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            self.active().kings,
+            res,
+        );
 
-        if !knights.any() {
-            return;
-        }
+        self.active().pawns.enumerate_legal_moves(
+            color,
+            active_mask,
+            passive_mask,
+            self.passive(),
+            self.metadata.en_passant,
+            self.active().kings,
+            res,
+        );
 
-        for from in knights {
-            let possible = Knights::MOVES.at(from) & !excluded;
-
-            for to in possible {
-                let from_to = ProtoMove { from, to };
-                let capture = passive.piece(from);
-
-                res.push(Move {
-                    color_and_piece,
-                    from_to,
-                    castling: None,
-                    capture: capture.map(|p| (to, p)),
-                    en_passant_last_turn: self.metadata.en_passant.is_some(),
-                    promotion: None,
-                });
-            }
-        }
+        self.active()
+            .kings
+            .enumerate_legal_moves(color, active_mask, self.passive(), res);
     }
 }

@@ -92,7 +92,7 @@ pub struct Metadata {
     pub change_happened_at: usize,
     pub white_castling: CastlingRights,
     pub black_castling: CastlingRights,
-    pub en_passant: Option<Square>,
+    pub en_passant: Option<(Square, Square)>,
 }
 
 impl Default for Metadata {

@@ -1,7 +1,9 @@
 use crate::bitboard::{
     boardmap::BoardMap,
     enums::{Color, ColorPiece, Dir, Piece, Rank},
+    half::HalfBitBoard,
     masks::Mask,
+    moves::{Move, ProtoMove},
     pieces::Micropawns,
     squares::Square,
 };
@@ -82,5 +84,41 @@ impl Kings {
 
     pub fn threats(&self, same: Mask) -> Mask {
         Self::MOVES.overlap(self.as_mask()) & !same
+    }
+
+    pub fn enumerate_legal_moves(
+        &self,
+        color: Color,
+        active_mask: Mask,
+        passive: &HalfBitBoard,
+        res: &mut Vec<Move>,
+    ) {
+        let color_and_piece = ColorPiece::new(color, Piece::King);
+
+        if !self.as_mask().any() {
+            return;
+        }
+
+        for from in self.as_mask() {
+            let possible = Kings::MOVES.at(from) & !active_mask;
+
+            for to in possible {
+                let from_to = ProtoMove { from, to };
+
+                let capture = passive.piece(to).map(|p| (to, p));
+
+                if from_to.makes_king_checked(active_mask, *self, capture, passive, color.other()) {
+                    continue;
+                }
+
+                res.push(Move {
+                    color_and_piece,
+                    from_to,
+                    capture,
+                    castling: None,
+                    promotion: None,
+                });
+            }
+        }
     }
 }

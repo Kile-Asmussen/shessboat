@@ -6,14 +6,17 @@ use crate::bitboard::{
     boardmap::BoardMap,
     enums::{Color, ColorPiece, File, Rank, Shade},
     masks::Mask,
-    pieces::{bishops::Bishops, kings::Kings, knights::Knights, rooks::Rooks, slide_move_stop},
+    pieces::{
+        bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
+        rooks::Rooks, slide_move_stop,
+    },
     squares::Square,
 };
 
 pub mod bitboard;
 
 fn main() {
-    let board = bitboard::BitBoard::new();
+    let mut board = bitboard::BitBoard::new();
 
     let mut print: BoardMap<Option<ColorPiece>> = BoardMap::new_with(None);
     let mut highlight = BoardMap::default();
@@ -23,11 +26,15 @@ fn main() {
     let mut moves = vec![];
     board.generate_moves(&mut moves);
 
-    let mask: Mask = moves.into_iter().map(|mv| mv.from_to.to.as_mask()).sum();
+    // let mask: Mask = board.white.threats(Color::White, board.black.as_mask());
 
-    mask.render(&mut highlight);
+    // mask.render(&mut highlight);
 
     print_chessboard(&print, &highlight);
+
+    for m in moves {
+        println!("{}", m);
+    }
 }
 
 #[test]
@@ -94,9 +101,7 @@ fn print_chessboard(pieces: &BoardMap<Option<ColorPiece>>, highlights: &BoardMap
 
             print!(
                 "{}",
-                format!(" {} ", print_char)
-                    .color(fg_color)
-                    .on_color(bg_color)
+                format!(" {} ", print_char).color(fg_color).on_color(bg_color)
             )
         }
         println!(" {}", rank.as_rank() + 1);

@@ -34,6 +34,13 @@ impl Color {
             ]),
         }
     }
+
+    pub const fn other(&self) -> Self {
+        match self {
+            Self::White => Self::Black,
+            Self::Black => Self::White,
+        }
+    }
 }
 
 #[rustfmt::skip]
@@ -221,6 +228,17 @@ impl Piece {
         }
     }
 
+    pub const fn black_letter(&self) -> char {
+        match self {
+            Piece::Pawn => 'p',
+            Piece::Knight => 'n',
+            Piece::Bishop => 'b',
+            Piece::Rook => 'r',
+            Piece::Queen => 'q',
+            Piece::King => 'k',
+        }
+    }
+
     pub const fn black_unicode(&self) -> char {
         match self {
             Piece::Pawn => '\u{265F}',
@@ -229,6 +247,17 @@ impl Piece {
             Piece::Rook => '\u{265C}',
             Piece::Queen => '\u{265B}',
             Piece::King => '\u{265A}',
+        }
+    }
+
+    pub const fn white_unicode(&self) -> char {
+        match self {
+            Piece::Pawn => '\u{2659}',
+            Piece::Knight => '\u{2658}',
+            Piece::Bishop => '\u{2657}',
+            Piece::Rook => '\u{2656}',
+            Piece::Queen => '\u{2655}',
+            Piece::King => '\u{2654}',
         }
     }
 }
@@ -332,19 +361,17 @@ impl ColorPiece {
 
     pub const fn letter(&self) -> char {
         use ColorPiece::*;
-        match self {
-            WhitePawn => 'P',
-            WhiteKnight => 'N',
-            WhiteBishop => 'B',
-            WhiteRook => 'R',
-            WhiteQueen => 'Q',
-            WhiteKing => 'K',
-            BlackPawn => 'p',
-            BlackKnight => 'n',
-            BlackBishop => 'b',
-            BlackRook => 'r',
-            BlackQueen => 'q',
-            BlackKing => 'k',
+        match self.color() {
+            Color::White => self.piece().white_letter(),
+            Color::Black => self.piece().black_letter(),
+        }
+    }
+
+    pub const fn unicode(&self) -> char {
+        use ColorPiece::*;
+        match self.color() {
+            Color::White => self.piece().white_unicode(),
+            Color::Black => self.piece().black_unicode(),
         }
     }
 }

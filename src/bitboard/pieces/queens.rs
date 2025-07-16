@@ -30,7 +30,7 @@ impl Queens {
     }
 
     pub const fn materiel(&self) -> Micropawns {
-        self.0.occupied() as i64 * 9_000_000
+        self.as_mask().occupied() as i64 * 9_000_000
     }
 
     pub const fn as_mask(&self) -> Mask {
@@ -50,7 +50,7 @@ impl Queens {
     }
 
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
-        for sq in self.0.iter() {
+        for sq in self.as_mask().iter() {
             board.set(sq, Some(ColorPiece::new(color, Piece::Queen)));
         }
     }

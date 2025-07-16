@@ -10,28 +10,10 @@ pub enum Color {
 }
 
 impl Color {
-    pub const fn as_mask(&self) -> Mask {
+    pub const fn starting_rank(&self) -> Rank {
         match self {
-            Self::White => Mask::board([
-                0b_00000000,
-                0b_00000000,
-                0b_00000000,
-                0b_00000000,
-                0b_00000000,
-                0b_00000000,
-                0b_11111111,
-                0b_11111111,
-            ]),
-            Self::Black => Mask::board([
-                0b_11111111,
-                0b_11111111,
-                0b_00000000,
-                0b_00000000,
-                0b_00000000,
-                0b_00000000,
-                0b_00000000,
-                0b_00000000,
-            ]),
+            Self::White => Rank::_1,
+            Self::Black => Rank::_8,
         }
     }
 

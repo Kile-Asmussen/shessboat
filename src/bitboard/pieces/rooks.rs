@@ -30,19 +30,19 @@ impl Rooks {
     }
 
     pub const fn materiel(&self) -> Micropawns {
-        self.0.occupied() as i64 * 5_000_000
+        self.as_mask().occupied() as i64 * 5_000_000
     }
 
     pub const fn captured(&self, cap: Option<(Square, Piece)>) -> Self {
         if let Some((sq, Piece::Rook)) = cap {
-            Self(self.0.unset(sq))
+            Self(self.as_mask().unset(sq))
         } else {
             *self
         }
     }
 
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
-        for sq in self.0.iter() {
+        for sq in self.as_mask().iter() {
             board.set(sq, Some(ColorPiece::new(color, Piece::Rook)));
         }
     }
@@ -66,11 +66,11 @@ impl Rooks {
     ) {
         let color_and_piece = ColorPiece::new(color, Piece::Rook);
 
-        if !self.0.any() {
+        if !self.as_mask().any() {
             return;
         }
 
-        for from in self.0 {
+        for from in self.as_mask() {
             let possible = slide_move_stop(true, Queens::NORTH.at(from), active_mask, passive_mask)
                 | slide_move_stop(true, Queens::EAST.at(from), active_mask, passive_mask)
                 | slide_move_stop(false, Queens::SOUTH.at(from), active_mask, passive_mask)

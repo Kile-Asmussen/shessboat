@@ -1,9 +1,9 @@
 use core::panic::PanicMessage;
-use std::fmt::Display;
+use std::{fmt::Display, fs::metadata};
 
 use crate::bitboard::{
     BitBoard, CastlingInfo,
-    castling::CastlingSide,
+    castling::{CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, Piece, Rank},
     half::HalfBitBoard,
     masks::Mask,
@@ -65,12 +65,12 @@ pub struct Move {
 }
 
 impl Move {
-    pub fn en_passant_square(&self) -> Option<Square> {
+    pub fn en_passant_square(&self) -> Option<(Square, Square)> {
         if self.color_and_piece == ColorPiece::WhitePawn {
             if let ((f, Rank::_2), Rank::_4) =
                 (self.from_to.from.algebraic(), self.from_to.to.rank())
             {
-                return Some(Square::at(f, Rank::_3));
+                return Some((Square::at(f, Rank::_3), Square::at(f, Rank::_4)));
             } else {
                 return None;
             };
@@ -78,7 +78,7 @@ impl Move {
             if let ((f, Rank::_7), Rank::_5) =
                 (self.from_to.from.algebraic(), self.from_to.to.rank())
             {
-                return Some(Square::at(f, Rank::_6));
+                return Some((Square::at(f, Rank::_6), Square::at(f, Rank::_5)));
             } else {
                 return None;
             };
@@ -116,11 +116,95 @@ fn size_fuckery() {
 }
 
 impl BitBoard {
+    pub fn compatible(&self, mv: &Move) -> bool {
+        if mv.color_and_piece.color() != self.metadata.to_move {
+            return false;
+        }
+
+        let color = mv.color_and_piece.color();
+
+        let Some(piece) = self.color(color).piece_at(mv.from_to.from) else {
+            return false;
+        };
+
+        if mv.color_and_piece.piece() != piece {
+            return false;
+        }
+
+        match mv.castling {
+            Some(CastlingSide::OOO) if !self.metadata.castling_right(color).ooo => return false,
+            Some(CastlingSide::OO) if !self.metadata.castling_right(color).oo => return false,
+            _ => {}
+        }
+
+        if let Some((sq, p)) = mv.capture {
+            if self.color(color).piece_at(sq) != Some(p) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     pub fn apply(&mut self, mv: &Move) {
-        let (active, passive) = self.color_mut(mv.color_and_piece.color());
+        let (color, piece) = mv.color_and_piece.split();
+        self.metadata.to_move = color.other();
+        if piece == Piece::Pawn || mv.capture.is_some() {
+            self.metadata.change_happened_at = self.metadata.half_turn;
+        }
+        self.metadata.half_turn += 1;
+
+        let kings = self.color(color).kings;
+
+        self.metadata.en_passant = mv.en_passant_square();
+        let rook_files = self.metadata.rook_files;
+
+        let castling = self.metadata.castling_right_mut(color);
+
+        if piece == Piece::King {
+            *castling = CastlingRights {
+                ooo: false,
+                oo: false,
+            };
+        }
+
+        if piece == Piece::Rook {
+            if castling.ooo
+                && mv.from_to.from.rank() == color.starting_rank()
+                && mv.from_to.from.file() == rook_files.ooo
+            {
+                castling.ooo = false;
+            }
+
+            if castling.oo
+                && mv.from_to.from.rank() == color.starting_rank()
+                && mv.from_to.from.file() == rook_files.oo
+            {
+                castling.oo = false;
+            }
+        }
+
+        let (active, passive) = self.color_mut(color);
         *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
         if let Some((sq, piece)) = mv.capture {
             *passive.piece_mask_mut(piece) ^= sq.as_mask();
+        }
+        match mv.castling {
+            Some(CastlingSide::OOO) => {
+                *active.piece_mask_mut(Piece::Rook) ^= ProtoMove {
+                    from: Square::at(rook_files.ooo, color.starting_rank()),
+                    to: mv.from_to.to.go(Dir::East).unwrap(),
+                }
+                .as_mask()
+            }
+            Some(CastlingSide::OO) => {
+                *active.piece_mask_mut(Piece::Rook) ^= ProtoMove {
+                    from: Square::at(rook_files.oo, color.starting_rank()),
+                    to: mv.from_to.to.go(Dir::West).unwrap(),
+                }
+                .as_mask()
+            }
+            None => {}
         }
     }
 
@@ -174,8 +258,13 @@ impl BitBoard {
             res,
         );
 
-        self.active()
-            .kings
-            .enumerate_legal_moves(color, active_mask, self.passive(), res);
+        self.active().kings.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            *self.metadata.castling_right(color),
+            self.metadata.rook_files,
+            res,
+        );
     }
 }

@@ -22,15 +22,19 @@ impl Debug for Mask {
 
 impl Mask {
     pub const fn nil() -> Self {
-        Mask(0)
+        Mask::new(0)
     }
 
     pub const fn full() -> Self {
-        Mask(u64::MAX)
+        Mask::new(u64::MAX)
     }
 
     pub const fn new(x: u64) -> Self {
         Mask(x)
+    }
+
+    pub const fn mirror(&self) -> Self {
+        Mask::new(self.as_u64().swap_bytes())
     }
 
     pub const fn overlap(&self, other: Mask) -> Mask {
@@ -61,6 +65,10 @@ impl Mask {
 
     pub const fn first(&self) -> Option<Square> {
         Square::new(self.0.trailing_zeros() as i8)
+    }
+
+    pub const fn last(&self) -> Option<Square> {
+        Square::new(self.0.leading_zeros() as i8)
     }
 
     pub const fn sans_first(&self) -> Self {

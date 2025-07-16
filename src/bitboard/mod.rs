@@ -12,7 +12,7 @@ use std::{collections::HashSet, hash::Hash, sync::LazyLock};
 
 use crate::bitboard::{
     boardmap::BoardMap,
-    castling::{CastlingInfo, CastlingRight, CastlingRights},
+    castling::{CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece, File, Piece, Rank},
     half::HalfBitBoard,
     hash::BitBoardHasher,
@@ -49,12 +49,12 @@ impl BitBoard {
         board[48..56].fill(Some(ColorPiece::BlackPawn));
 
         let mut board = BoardMap::new(board);
-        return Self::new_board(&board);
+        return Self::new_board(&board, Metadata::new_starting_array(arr));
     }
 
-    pub fn new_board(board: &BoardMap<Option<ColorPiece>>) -> Self {
+    pub fn new_board(board: &BoardMap<Option<ColorPiece>>, metadata: Metadata) -> Self {
         Self {
-            metadata: Metadata::default(),
+            metadata,
             white: HalfBitBoard::new(board, Color::White),
             black: HalfBitBoard::new(board, Color::Black),
         }
@@ -103,11 +103,46 @@ pub struct Metadata {
     pub change_happened_at: usize,
     pub white_castling: CastlingRights,
     pub black_castling: CastlingRights,
+    pub rook_files: CastlingInfo<File>,
     pub en_passant: Option<(Square, Square)>,
 }
 
-impl Default for Metadata {
-    fn default() -> Self {
+impl Metadata {
+    pub fn castling_right(&self, color: Color) -> &CastlingRights {
+        match color {
+            Color::White => &self.white_castling,
+            Color::Black => &self.black_castling,
+        }
+    }
+
+    pub fn castling_right_mut(&mut self, color: Color) -> &mut CastlingRights {
+        match color {
+            Color::White => &mut self.white_castling,
+            Color::Black => &mut self.black_castling,
+        }
+    }
+}
+
+impl Metadata {
+    pub fn new_starting_array(array: [Piece; 8]) -> Self {
+        let mut rook_files = CastlingInfo {
+            ooo: File::A,
+            oo: File::H,
+        };
+
+        let mut king_seen = false;
+        for (n, p) in array.iter().enumerate() {
+            king_seen |= p == &Piece::King;
+
+            if p == &Piece::Rook {
+                if !king_seen {
+                    rook_files.ooo = File::file(n as i8).unwrap()
+                } else {
+                    rook_files.oo = File::file(n as i8).unwrap()
+                }
+            }
+        }
+
         Self {
             hash: 0,
             to_move: Color::White,
@@ -115,6 +150,7 @@ impl Default for Metadata {
             change_happened_at: 0,
             white_castling: CastlingInfo::default(),
             black_castling: CastlingInfo::default(),
+            rook_files,
             en_passant: None,
         }
     }

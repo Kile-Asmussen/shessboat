@@ -41,7 +41,7 @@ impl<T: Sized + Copy> BoardMap<T> {
 }
 
 impl BoardMap<Mask> {
-    pub fn overlap(&self, mask: Mask) -> Mask {
+    pub fn overlay(&self, mask: Mask) -> Mask {
         mask.iter().map(|sq| self.at(sq)).sum()
     }
 }

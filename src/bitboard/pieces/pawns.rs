@@ -22,7 +22,7 @@ impl Pawns {
     }
 
     pub fn materiel(&self) -> Micropawns {
-        self.0.occupied() as i64 * 1_000_000
+        self.as_mask().occupied() as i64 * 1_000_000
     }
 
     pub const fn as_mask(&self) -> Mask {
@@ -42,7 +42,7 @@ impl Pawns {
     }
 
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
-        for sq in self.0.iter() {
+        for sq in self.as_mask().iter() {
             board.set(sq, Some(ColorPiece::new(color, Piece::Pawn)));
         }
     }
@@ -97,7 +97,7 @@ impl Pawns {
             Color::White => &Self::WHITE_THREATS,
             Color::Black => &Self::BLACK_THREATS,
         };
-        threat_masks.overlap(self.as_mask())
+        threat_masks.overlay(self.as_mask())
     }
 
     pub const fn promotion_rank(color: Color) -> Rank {

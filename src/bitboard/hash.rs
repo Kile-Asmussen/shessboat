@@ -8,7 +8,7 @@ use std::{
 use rand::{Fill, SeedableRng};
 
 use crate::bitboard::{
-    BitBoard, CastlingInfo, CastlingRight, CastlingRights,
+    BitBoard, CastlingInfo, CastlingRights,
     boardmap::BoardMap,
     castling::CastlingSide,
     enums::{Color, ColorPiece, Piece},
@@ -179,15 +179,8 @@ impl HalfBitBoardHasher {
     }
 
     pub fn hash_castle(&self, castling: CastlingRights) -> HashResult {
-        (if castling.ooo == CastlingRight::Retained {
-            self.castling.ooo
-        } else {
-            0
-        }) ^ (if castling.oo == CastlingRight::Retained {
-            self.castling.oo
-        } else {
-            0
-        })
+        (if castling.ooo { self.castling.ooo } else { 0 })
+            ^ (if castling.oo { self.castling.oo } else { 0 })
     }
 }
 

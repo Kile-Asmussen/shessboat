@@ -1,16 +1,9 @@
-pub type CastlingRights = CastlingInfo<CastlingRight>;
+pub type CastlingRights = CastlingInfo<bool>;
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
 pub struct CastlingInfo<T> {
     pub ooo: T,
     pub oo: T,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum CastlingRight {
-    Retained = 1,
-    Forefeited,
-    Claimed,
 }
 
 impl<T> CastlingInfo<T> {
@@ -22,12 +15,9 @@ impl<T> CastlingInfo<T> {
     }
 }
 
-impl Default for CastlingRights {
-    fn default() -> Self {
-        Self {
-            ooo: CastlingRight::Retained,
-            oo: CastlingRight::Retained,
-        }
+impl CastlingRights {
+    pub fn any(&self) -> bool {
+        self.ooo || self.oo
     }
 }
 

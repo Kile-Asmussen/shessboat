@@ -24,7 +24,7 @@ impl Knights {
     }
 
     pub const fn materiel(&self) -> Micropawns {
-        self.0.occupied() as i64 * 3_250_000
+        self.as_mask().occupied() as i64 * 3_250_000
     }
 
     pub const fn as_mask(&self) -> Mask {
@@ -44,7 +44,7 @@ impl Knights {
     }
 
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
-        for sq in self.0.iter() {
+        for sq in self.as_mask().iter() {
             board.set(sq, Some(ColorPiece::new(color, Piece::Knight)));
         }
     }
@@ -84,7 +84,7 @@ impl Knights {
     }
 
     pub fn threats(&self, same: Mask) -> Mask {
-        Self::MOVES.overlap(self.as_mask()) & !same
+        Self::MOVES.overlay(self.as_mask()) & !same
     }
 
     pub fn enumerate_legal_moves(

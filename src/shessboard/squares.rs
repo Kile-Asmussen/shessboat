@@ -3,7 +3,7 @@ use std::{
     num::NonZeroI8,
 };
 
-use crate::bitboard::{
+use crate::shessboard::{
     enums::{Dir, File, Rank},
     masks::Mask,
 };

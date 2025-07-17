@@ -2,7 +2,7 @@ use std::ops::Index;
 
 use rand::Fill;
 
-use crate::bitboard::{
+use crate::shessboard::{
     enums::{ColorPiece, File, Rank},
     masks::{Mask, SquareIter},
     squares::Square,

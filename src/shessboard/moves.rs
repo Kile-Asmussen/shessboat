@@ -1,7 +1,7 @@
 use core::panic::PanicMessage;
 use std::{fmt::Display, fs::metadata};
 
-use crate::bitboard::{
+use crate::shessboard::{
     BitBoard, CastlingInfo,
     castling::{CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, Piece, Rank},

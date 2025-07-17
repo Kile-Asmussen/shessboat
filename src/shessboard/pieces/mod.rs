@@ -1,7 +1,7 @@
 use core::panic;
 use std::collections::BTreeSet;
 
-use crate::bitboard::{
+use crate::shessboard::{
     enums::{ColorPiece, Piece},
     masks::Mask,
 };

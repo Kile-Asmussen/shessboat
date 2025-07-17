@@ -2,7 +2,7 @@
 
 use colored::Colorize;
 
-use crate::bitboard::{
+use crate::shessboard::{
     boardmap::BoardMap,
     enums::{Color, ColorPiece, File, Rank, Shade},
     masks::Mask,
@@ -13,10 +13,10 @@ use crate::bitboard::{
     squares::Square,
 };
 
-pub mod bitboard;
+pub mod shessboard;
 
 fn main() {
-    let mut board = bitboard::BitBoard::new();
+    let mut board = shessboard::BitBoard::new();
 
     let mut print: BoardMap<Option<ColorPiece>> = BoardMap::new_with(None);
     let mut highlight = BoardMap::default();

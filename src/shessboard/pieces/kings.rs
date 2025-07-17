@@ -1,6 +1,6 @@
 use std::arch::x86_64::CpuidResult;
 
-use crate::bitboard::{
+use crate::shessboard::{
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, File, Piece, Rank},

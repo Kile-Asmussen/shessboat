@@ -7,7 +7,7 @@ use std::{
 
 use rand::{Fill, SeedableRng};
 
-use crate::bitboard::{
+use crate::shessboard::{
     BitBoard, CastlingInfo, CastlingRights,
     boardmap::BoardMap,
     castling::CastlingSide,

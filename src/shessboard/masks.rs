@@ -4,7 +4,7 @@ use std::{
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not},
 };
 
-use crate::bitboard::{
+use crate::shessboard::{
     boardmap::BoardMap,
     enums::{Color, ColorPiece, Shade},
     squares::Square,

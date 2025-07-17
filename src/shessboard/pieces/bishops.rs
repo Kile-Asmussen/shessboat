@@ -1,4 +1,4 @@
-use crate::bitboard::{
+use crate::shessboard::{
     boardmap::BoardMap,
     enums::{Color, ColorPiece, Dir, Piece},
     half::HalfBitBoard,

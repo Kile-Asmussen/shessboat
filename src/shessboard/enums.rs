@@ -1,4 +1,4 @@
-use crate::bitboard::squares::Square;
+use crate::shessboard::squares::Square;
 
 use super::masks::Mask;
 

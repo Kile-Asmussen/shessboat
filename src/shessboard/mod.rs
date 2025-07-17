@@ -10,7 +10,7 @@ pub mod squares;
 
 use std::{collections::HashSet, hash::Hash, sync::LazyLock};
 
-use crate::bitboard::{
+use crate::shessboard::{
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece, File, Piece, Rank},

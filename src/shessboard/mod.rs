@@ -1,3 +1,4 @@
+mod algebraic;
 pub mod boardmap;
 pub mod castling;
 pub mod enums;

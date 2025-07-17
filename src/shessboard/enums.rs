@@ -113,6 +113,20 @@ impl Rank {
             Rank::_8 => '8',
         }
     }
+
+    pub const fn from_char(c: char) -> Option<Self> {
+        Some(match c {
+            '1' => Rank::_1,
+            '2' => Rank::_2,
+            '3' => Rank::_3,
+            '4' => Rank::_4,
+            '5' => Rank::_5,
+            '6' => Rank::_6,
+            '7' => Rank::_7,
+            '8' => Rank::_8,
+            _ => return None,
+        })
+    }
 }
 
 #[test]
@@ -175,6 +189,21 @@ impl File {
             G => 'g',
             H => 'h',
         }
+    }
+
+    pub const fn from_char(c: char) -> Option<Self> {
+        use File::*;
+        Some(match c {
+            'a' => A,
+            'b' => B,
+            'c' => C,
+            'd' => D,
+            'e' => E,
+            'f' => F,
+            'g' => G,
+            'h' => H,
+            _ => return None,
+        })
     }
 }
 

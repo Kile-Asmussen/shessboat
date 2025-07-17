@@ -1,8 +1,12 @@
 #![allow(unused)]
 
+use std::{io::stdin, thread::sleep, time::Duration};
+
 use colored::Colorize;
+use rand::{rng, seq::SliceRandom};
 
 use crate::shessboard::{
+    algebraic::Notation,
     boardmap::BoardMap,
     enums::{Color, ColorPiece, File, Rank, Shade},
     masks::Mask,
@@ -17,23 +21,39 @@ pub mod shessboard;
 
 fn main() {
     let mut board = shessboard::BitBoard::new();
+    let mut move_log = vec![];
+    let mut rng = rng();
 
-    let mut print: BoardMap<Option<ColorPiece>> = BoardMap::new_with(None);
-    let mut highlight = BoardMap::default();
+    loop {
+        let mut moves = vec![];
+        board.generate_moves(&mut moves);
 
-    let mut moves = vec![];
-    board.generate_moves(&mut moves);
+        if moves.len() == 0 {
+            if (board.passive().threats(board.metadata.to_move, board.active().as_mask(), None)
+                & board.active().kings.as_mask())
+            .any()
+            {
+                println!("{:?} wins", board.metadata.to_move.other());
+                return;
+            } else {
+                println!("Stalemate");
+                return;
+            }
+        }
 
-    board.render(&mut print);
+        let mut print = BoardMap::<Option<ColorPiece>>::new_with(None);
+        board.render(&mut print);
+        print_chessboard(&print, &BoardMap::new_with(false));
 
-    // let mask: Mask = board.white.threats(Color::White, board.black.as_mask());
+        sleep(Duration::from_millis(500));
 
-    // mask.render(&mut highlight);
+        &mut moves[..].shuffle(&mut rng);
 
-    print_chessboard(&print, &highlight);
+        let mv = moves.first().unwrap().clone();
+        move_log.push(mv);
+        println!("> {}", mv);
 
-    for m in moves {
-        println!("{}", m);
+        board.apply(&mv);
     }
 }
 

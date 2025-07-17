@@ -16,7 +16,9 @@ struct Notation {
 
 impl Notation {
     pub fn read(s: &str) -> Self {
-        todo!()
+        let pawn = regex::Regex::new("");
+
+        todo!();
     }
 }
 

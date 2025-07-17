@@ -38,18 +38,6 @@ impl Square {
         }
     }
 
-    pub const fn read<'a>(chars: &mut core::str::Chars<'a>) -> Option<Self> {
-        let Some(f) = chars.next() else {
-            return None;
-        };
-
-        let Some(r) = chars.next() else {
-            return None;
-        };
-
-        Some(Square::at(File::from_char(f)?, Rank::from_char(r)));
-    }
-
     pub const fn from_mask(mask: Mask) -> Option<Self> {
         if mask.occupied() == 1 {
             mask.first()

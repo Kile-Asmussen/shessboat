@@ -7,4 +7,5 @@ edition = "2024"
 
 [dependencies]
 rand = "0.9.1"
+regex = "1.11.1"
 colored = "3.0.0"

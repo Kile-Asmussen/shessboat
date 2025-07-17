@@ -94,6 +94,14 @@ impl BitBoard {
             Color::Black => &self.white,
         }
     }
+
+    pub fn is_in_check(&self) -> bool {
+        (self.active().kings.as_mask()
+            & self
+                .passive()
+                .threats(self.metadata.to_move.other(), self.active().as_mask(), None))
+        .any()
+    }
 }
 
 #[derive(Clone, Debug)]

@@ -23,8 +23,16 @@ fn main() {
     let mut board = shessboard::BitBoard::new();
     let mut move_log = vec![];
     let mut rng = rng();
+    let mut last_move = Mask::nil();
+    let mut winner = None;
 
     loop {
+        let mut print = BoardMap::new_with(None);
+        let mut highlight = BoardMap::new_with(false);
+        board.render(&mut print);
+        last_move.render(&mut highlight);
+        print_chessboard(&print, &highlight);
+
         let mut moves = vec![];
         board.generate_moves(&mut moves);
 
@@ -33,27 +41,43 @@ fn main() {
                 & board.active().kings.as_mask())
             .any()
             {
-                println!("{:?} wins", board.metadata.to_move.other());
-                return;
+                winner = Some(board.metadata.to_move);
+                break;
             } else {
-                println!("Stalemate");
-                return;
+                break;
             }
         }
 
-        let mut print = BoardMap::<Option<ColorPiece>>::new_with(None);
-        board.render(&mut print);
-        print_chessboard(&print, &BoardMap::new_with(false));
-
-        sleep(Duration::from_millis(500));
+        // sleep(Duration::from_millis(500));
 
         &mut moves[..].shuffle(&mut rng);
 
         let mv = moves.first().unwrap().clone();
-        move_log.push(mv);
-        println!("> {}", mv);
+        last_move = mv.from_to.as_mask();
+
+        let notated = Notation::disambiguate(mv, &moves);
+        println!("> {}", notated);
 
         board.apply(&mv);
+        move_log.push((notated, if board.is_in_check() { "+" } else { "" }));
+    }
+
+    if winner.is_some() {
+        move_log.last_mut().unwrap().1 = "#";
+    }
+
+    for (turn, moves) in move_log.chunks(2).enumerate() {
+        print!("{}. ", turn + 1);
+        for (m, x) in moves {
+            print!("{}{} ", m, x);
+        }
+        println!();
+    }
+
+    match winner {
+        Some(Color::White) => println!("1–0"),
+        Some(Color::Black) => println!("0–1"),
+        None => println!("½–½"),
     }
 }
 

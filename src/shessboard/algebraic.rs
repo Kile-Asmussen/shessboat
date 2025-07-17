@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{default, fmt::Display};
 
 use regex::Regex;
 
@@ -66,7 +66,6 @@ impl Notation {
                 origin_file,
                 destination,
                 capture,
-                ..
             }) => {
                 mv.color_and_piece.piece() == piece
                     && origin_file.unwrap_or(mv.from_to.from.file()) == mv.from_to.from.file()

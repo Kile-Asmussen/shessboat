@@ -104,4 +104,22 @@ impl HalfBitBoard {
 
         king | queen | rook | bishop | knight | pawn
     }
+
+    pub fn set_piece(&mut self, piece: Option<Piece>, sq: Square) {
+        if let Some(p) = piece {
+            let x = self.piece_mask_mut(p);
+            *x = x.set(sq);
+        } else {
+            for m in [
+                self.kings.mut_mask(),
+                self.queens.mut_mask(),
+                self.rooks.mut_mask(),
+                self.bishops.mut_mask(),
+                self.knights.mut_mask(),
+                self.pawns.mut_mask(),
+            ] {
+                *m = m.unset(sq)
+            }
+        }
+    }
 }

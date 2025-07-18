@@ -17,6 +17,7 @@ use crate::shessboard::{
     squares::Square,
 };
 
+pub mod engine;
 pub mod shessboard;
 
 fn main() {

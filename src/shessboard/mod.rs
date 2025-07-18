@@ -37,6 +37,13 @@ impl BitBoard {
         Self::new_960(518)
     }
 
+    pub fn empty() -> Self {
+        Self::new_board(
+            &BoardMap::new_with(None),
+            Metadata::new_starting_array(chess_960(518)),
+        )
+    }
+
     pub fn new_960(n: usize) -> Self {
         Self::new_starting_array(chess_960(n))
     }
@@ -81,6 +88,16 @@ impl BitBoard {
         match color {
             Color::White => (&mut self.white, &mut self.black),
             Color::Black => (&mut self.black, &mut self.white),
+        }
+    }
+
+    pub fn set_piece(&mut self, c: Option<ColorPiece>, sq: Square) {
+        if let Some(c) = c {
+            let (b, _) = self.color_mut(c.color());
+            b.set_piece(Some(c.piece()), sq);
+        } else {
+            self.white.set_piece(None, sq);
+            self.black.set_piece(None, sq);
         }
     }
 

@@ -1,4 +1,4 @@
-use std::{default, fmt::Display};
+use std::{default, fmt::Display, str::FromStr};
 
 use regex::Regex;
 
@@ -195,5 +195,13 @@ impl Display for Notation {
         }
 
         Ok(())
+    }
+}
+
+impl FromStr for Notation {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Notation::read(s).ok_or(())
     }
 }

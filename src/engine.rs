@@ -22,6 +22,10 @@ impl ShessEngine {
         }
     }
 
+    pub fn to_move(&self) -> Color {
+        self.board.metadata.to_move
+    }
+
     pub fn set_position(&mut self, n: usize) {
         self.board = BitBoard::new_960(n);
         self.moves.clear();
@@ -69,7 +73,7 @@ impl ShessEngine {
         self.board.apply(&mv);
         self.moves.clear();
         self.board.generate_moves(&mut self.moves);
-        if self.board.is_in_check() {
+        if self.board.is_in_check(self.to_move()) {
             if self.moves.len() != 0 {
                 Ok(((n, "+"), mv))
             } else {

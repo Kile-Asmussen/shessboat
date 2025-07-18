@@ -40,7 +40,19 @@ fn main() {
         print_chessboard(&engine.as_boardmap(), highlight);
         loop {
             let mut s = String::new();
-            print!("{:?}> ", engine.board.metadata.to_move);
+            if engine.moves.len() == 0 {
+                let res = if engine.board.is_in_check(engine.to_move()) {
+                    match engine.to_move() {
+                        Color::White => "0–1",
+                        Color::Black => "1–0",
+                    }
+                } else {
+                    "½–½"
+                };
+                print!("{}> ", res);
+            } else {
+                print!("{:?}> ", engine.to_move());
+            }
             stdout().flush();
             stdin().read_line(&mut s);
             let s = s.trim().split(|c: char| c.is_whitespace()).collect::<Vec<_>>();
@@ -84,7 +96,7 @@ fn main() {
                     } else if let Some(&"B" | &"b") = s.get(1) {
                         engine.threat_mask(Color::Black)
                     } else {
-                        engine.threat_mask(engine.board.metadata.to_move)
+                        engine.threat_mask(engine.to_move())
                     };
                     break;
                 }
@@ -123,7 +135,11 @@ fn main() {
                     }
                 }
                 "ls" => {
-                    for mvs in engine.printable_moves().chunks(8) {
+                    let legal_moves = engine.printable_moves();
+                    if legal_moves.len() == 0 {
+                        println!("No legal moves");
+                    }
+                    for mvs in legal_moves.chunks(8) {
                         for mv in mvs {
                             print!("{}", mv);
                         }

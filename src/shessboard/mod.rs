@@ -112,11 +112,13 @@ impl BitBoard {
         }
     }
 
-    pub fn is_in_check(&self) -> bool {
-        (self.active().kings.as_mask()
-            & self
-                .passive()
-                .threats(self.metadata.to_move.other(), self.active().as_mask(), None))
+    pub fn is_in_check(&self, c: Color) -> bool {
+        (self.color(c).kings.as_mask()
+            & self.color(c.other()).threats(
+                self.metadata.to_move.other(),
+                self.active().as_mask(),
+                None,
+            ))
         .any()
     }
 }

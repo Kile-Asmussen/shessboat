@@ -8,9 +8,14 @@ pub struct ShessEngine {
 impl ShessEngine {
     pub fn new() -> Self {
         Self {
-            board: BitBoard::new(),
+            board: BitBoard::empty(),
             moves: vec![],
         }
+    }
+
+    pub fn set_position(&mut self, n: usize) {
+        self.board = BitBoard::new_960(n);
+        self.board.generate_moves(&mut self.moves);
     }
 
     pub fn reset(&mut self) {
@@ -45,6 +50,12 @@ impl ShessEngine {
 
         self.board.generate_moves(&mut self.moves);
     }
+
+    pub fn set_turn(&self) -> {
+        
+    }
+
+    pub fn print_metadata(&self)
 
     pub fn print_moves(&self) {
         let mut v =

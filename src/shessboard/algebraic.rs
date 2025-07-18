@@ -18,15 +18,15 @@ pub enum Notation {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Normal {
-    piece: Piece,
-    origin_rank: Option<Rank>,
-    origin_file: Option<File>,
-    destination: Square,
-    capture: bool,
+    pub piece: Piece,
+    pub origin_rank: Option<Rank>,
+    pub origin_file: Option<File>,
+    pub destination: Square,
+    pub capture: bool,
 }
 
 impl Notation {
-    pub fn disambiguate(mv: Move, legal_moves: &[Move]) -> Self {
+    pub fn disambiguate(mv: &Move, legal_moves: &[Move]) -> Self {
         match mv.castling {
             Some(c) => return Self::Castling(c),
             None => {}
@@ -55,6 +55,10 @@ impl Notation {
         }
 
         Self::Normal(res)
+    }
+
+    pub fn find(self, mv: &[Move]) -> Vec<&Move> {
+        mv.iter().filter(|m| self.matches(m)).collect::<Vec<_>>()
     }
 
     pub fn matches(self, mv: &Move) -> bool {
@@ -123,7 +127,7 @@ impl Notation {
             }));
         }
 
-        let castling = Regex::new(r"\AO-O-O|\AO-O").ok()?;
+        let castling = Regex::new(r"\A[oO0]-?[oO0]-?[oO0]|\A[oO0]-?[oO0]").ok()?;
         if let Some(castling) = castling.find(s) {
             return Some(Notation::Castling(match castling.as_str() {
                 "O-O-O" => CastlingSide::OOO,

@@ -1,93 +1,198 @@
 #![allow(unused)]
 
-use std::{io::stdin, thread::sleep, time::Duration};
+use std::{
+    io::{Write, stdin, stdout},
+    thread::sleep,
+    time::Duration,
+};
 
 use colored::Colorize;
 use rand::{rng, seq::SliceRandom};
 
-use crate::shessboard::{
-    algebraic::Notation,
-    boardmap::BoardMap,
-    enums::{Color, ColorPiece, File, Rank, Shade},
-    masks::Mask,
-    pieces::{
-        bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
-        rooks::Rooks, slide_move_stop,
+use crate::{
+    engine::ShessEngine,
+    shessboard::{
+        algebraic::Notation,
+        boardmap::BoardMap,
+        enums::{Color, ColorPiece, File, Piece, Rank, Shade},
+        masks::Mask,
+        moves::ProtoMove,
+        pieces::{
+            bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
+            rooks::Rooks, slide_move_stop,
+        },
+        squares::Square,
     },
-    squares::Square,
 };
 
 pub mod engine;
 pub mod shessboard;
 
 fn main() {
-    let mut board = shessboard::BitBoard::new();
-    let mut move_log = vec![];
-    let mut rng = rng();
-    let mut last_move = Mask::nil();
-    let mut winner = None;
+    let mut engine = ShessEngine::new();
+    engine.set_position(518);
+    let mut move_log = Vec::<(Notation, &'static str)>::new();
+    let mut highlight = Mask::nil();
 
     loop {
-        let mut print = BoardMap::new_with(None);
-        let mut highlight = BoardMap::new_with(false);
-        board.render(&mut print);
-        last_move.render(&mut highlight);
-        print_chessboard(&print, &highlight);
-
-        let mut moves = vec![];
-        board.generate_moves(&mut moves);
-
-        if moves.len() == 0 {
-            if (board.passive().threats(board.metadata.to_move, board.active().as_mask(), None)
-                & board.active().kings.as_mask())
-            .any()
-            {
-                winner = Some(board.metadata.to_move);
-                break;
-            } else {
-                break;
+        print!("\x1B[2J\x1B[1;1H");
+        stdout().flush();
+        print_chessboard(&engine.as_boardmap(), highlight);
+        loop {
+            let mut s = String::new();
+            print!("{:?}> ", engine.board.metadata.to_move);
+            stdout().flush();
+            stdin().read_line(&mut s);
+            let s = s.trim().split(|c: char| c.is_whitespace()).collect::<Vec<_>>();
+            if s.len() < 1 {
+                continue;
+            }
+            match s[0] {
+                "exit" => {
+                    return;
+                }
+                "clear" => {
+                    break;
+                }
+                "pos" => {
+                    if let Some(n) = s.get(1) {
+                        if let Ok(n) = n.parse() {
+                            engine.set_position(n);
+                            move_log.clear();
+                            highlight = Mask::nil();
+                            break;
+                        } else {
+                            println!("Invalid number");
+                            continue;
+                        }
+                    } else {
+                        engine.set_position(518);
+                        move_log.clear();
+                        highlight = Mask::nil();
+                        break;
+                    }
+                }
+                "reset" => {
+                    highlight = Mask::nil();
+                    engine.reset();
+                    move_log.clear();
+                    break;
+                }
+                "threats" => {
+                    highlight = if let Some(&"W" | &"w") = s.get(1) {
+                        engine.threat_mask(Color::White)
+                    } else if let Some(&"B" | &"b") = s.get(1) {
+                        engine.threat_mask(Color::Black)
+                    } else {
+                        engine.threat_mask(engine.board.metadata.to_move)
+                    };
+                    break;
+                }
+                "q" => {
+                    highlight = Mask::nil();
+                    break;
+                }
+                "i" => {
+                    if let (Some(p), Some(sq)) = (s.get(1), s.get(2)) {
+                        if let (Some(p), Some(sq)) =
+                            (ColorPiece::from_str(*p), Notation::read_square(*sq))
+                        {
+                            engine.place(Some(p), sq);
+                            break;
+                        } else {
+                            println!("Format: <piece letter> <square>");
+                            continue;
+                        }
+                    } else {
+                        println!("Format: <piece letter> <square>");
+                        continue;
+                    }
+                }
+                "d" => {
+                    if let Some(sq) = s.get(1) {
+                        if let Some(sq) = Notation::read_square(sq) {
+                            engine.place(None, sq);
+                            break;
+                        } else {
+                            println!("Format: <square>");
+                            continue;
+                        }
+                    } else {
+                        println!("Format: <square>");
+                        continue;
+                    }
+                }
+                "ls" => {
+                    for mvs in engine.printable_moves().chunks(8) {
+                        for mv in mvs {
+                            print!("{}", mv);
+                        }
+                        println!();
+                    }
+                    continue;
+                }
+                "log" => {
+                    for (n, mv) in move_log.chunks(2).enumerate() {
+                        print!("{}. ", n + 1);
+                        for m in mv {
+                            print!("{}{} ", m.0, m.1);
+                        }
+                        println!();
+                    }
+                }
+                "meta" => {
+                    println!("{}", engine.printable_metadata());
+                    continue;
+                }
+                "cast" => {
+                    if let Some(&"W" | &"w") = s.get(1) {
+                        engine.board.metadata.white_castling.ooo = s.contains(&"ooo");
+                        engine.board.metadata.white_castling.oo = s.contains(&"oo");
+                    } else if let Some(&"B" | &"b") = s.get(1) {
+                        engine.board.metadata.black_castling.ooo = s.contains(&"ooo");
+                        engine.board.metadata.black_castling.oo = s.contains(&"oo");
+                    }
+                }
+                "mv" => {
+                    if let (Some(sq1), Some(sq2)) = (s.get(1), s.get(2)) {
+                        if let (Some(sq1), Some(sq2)) =
+                            (Notation::read_square(*sq1), Notation::read_square(*sq2))
+                        {
+                            engine.cheat_move(ProtoMove { from: sq1, to: sq2 });
+                            break;
+                        } else {
+                            println!("Format: <square> <square>");
+                            continue;
+                        }
+                    } else {
+                        println!("Format: <square> <square>");
+                        continue;
+                    }
+                }
+                s => {
+                    if let Some(n) = Notation::read(s) {
+                        match engine.normal_move(n) {
+                            Ok(ns) => {
+                                move_log.push(ns.0);
+                                highlight = ns.1.from_to.as_mask();
+                                break;
+                            }
+                            Err(e) => {
+                                println!("Error: {}", e);
+                                continue;
+                            }
+                        }
+                    } else {
+                        println!("Unrecognized command");
+                        continue;
+                    }
+                }
             }
         }
-
-        // sleep(Duration::from_millis(500));
-
-        &mut moves[..].shuffle(&mut rng);
-
-        let mv = moves.first().unwrap().clone();
-        last_move = mv.from_to.as_mask();
-
-        let notated = Notation::disambiguate(mv, &moves);
-        println!("> {}", notated);
-
-        board.apply(&mv);
-        move_log.push((notated, if board.is_in_check() { "+" } else { "" }));
-    }
-
-    if winner.is_some() {
-        move_log.last_mut().unwrap().1 = "#";
-    }
-
-    for (turn, moves) in move_log.chunks(2).enumerate() {
-        print!("{}. ", turn + 1);
-        for (m, x) in moves {
-            print!("{}{} ", m, x);
-        }
-        println!();
-    }
-
-    match winner {
-        Some(Color::White) => println!("1–0"),
-        Some(Color::Black) => println!("0–1"),
-        None => println!("½–½"),
     }
 }
 
-#[test]
-fn sizeof_option_i32() {
-    assert_eq!(std::mem::size_of::<Option<i32>>(), 8);
-}
-
-fn print_chessboard(pieces: &BoardMap<Option<ColorPiece>>, highlights: &BoardMap<bool>) {
+fn print_chessboard(pieces: &BoardMap<Option<ColorPiece>>, highlights: Mask) {
     let chessboard = [
         Rank::_8,
         Rank::_7,
@@ -114,7 +219,7 @@ fn print_chessboard(pieces: &BoardMap<Option<ColorPiece>>, highlights: &BoardMap
                 },
             };
 
-            let bg_color = if highlights.at(sq) {
+            let bg_color = if highlights.contains(sq) {
                 colored::Color::TrueColor {
                     r: 0xAF,
                     g: 0x7F,

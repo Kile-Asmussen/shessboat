@@ -147,9 +147,15 @@ impl Metadata {
             Color::Black => &mut self.black_castling,
         }
     }
-}
 
-impl Metadata {
+    pub fn turn(&self) -> usize {
+        self.half_turn / 2 + 1
+    }
+
+    pub fn turn_clock(&self) -> usize {
+        (self.half_turn - self.change_happened_at) / 2 + 1
+    }
+
     pub fn new_starting_array(array: [Piece; 8]) -> Self {
         let mut rook_files = CastlingInfo {
             ooo: File::A,
@@ -172,10 +178,10 @@ impl Metadata {
         Self {
             hash: 0,
             to_move: Color::White,
-            half_turn: 1,
+            half_turn: 0,
             change_happened_at: 0,
-            white_castling: CastlingInfo::default(),
-            black_castling: CastlingInfo::default(),
+            white_castling: CastlingRights::new(),
+            black_castling: CastlingRights::new(),
             rook_files,
             en_passant: None,
         }

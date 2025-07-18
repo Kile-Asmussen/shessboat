@@ -1,6 +1,6 @@
 pub type CastlingRights = CastlingInfo<bool>;
 
-#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct CastlingInfo<T> {
     pub ooo: T,
     pub oo: T,
@@ -16,6 +16,12 @@ impl<T> CastlingInfo<T> {
 }
 
 impl CastlingRights {
+    pub fn new() -> Self {
+        Self {
+            ooo: true,
+            oo: true,
+        }
+    }
     pub fn any(&self) -> bool {
         self.ooo || self.oo
     }

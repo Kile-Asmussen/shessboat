@@ -93,7 +93,8 @@ impl HalfBitBoard {
     }
 
     pub fn threats(&self, color: Color, opposite: Mask, cap: Option<(Square, Piece)>) -> Mask {
-        let same = self.as_mask();
+        let opposite = opposite | self.as_mask();
+        let same = Mask::nil();
 
         let king = self.kings.threats(same);
         let queen = self.queens.captured(cap).threats(Rooks::nil(), Bishops::nil(), same, opposite);

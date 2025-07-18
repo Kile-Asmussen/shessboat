@@ -120,16 +120,14 @@ impl Kings {
         }
 
         if let Some(from) = self.as_mask().first() {
-            let possible = Kings::MOVES.at(from) & !active_mask;
+            let possible = Kings::MOVES.at(from)
+                & !active_mask
+                & !passive.threats(color.other(), active_mask, None);
 
             for to in possible {
                 let from_to = ProtoMove { from, to };
 
                 let capture = passive.piece_at(to).map(|p| (to, p));
-
-                if from_to.makes_king_checked(active_mask, *self, capture, passive, color.other()) {
-                    continue;
-                }
 
                 res.push(Move {
                     color_and_piece,

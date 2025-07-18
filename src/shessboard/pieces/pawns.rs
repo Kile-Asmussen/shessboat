@@ -126,7 +126,7 @@ impl Pawns {
         #[allow(non_snake_case)]
         let (MOVES, THREATS) = match color {
             Color::White => (&Self::WHITE_MOVES, &Self::WHITE_THREATS),
-            Color::Black => (&Self::WHITE_MOVES, &Self::WHITE_THREATS),
+            Color::Black => (&Self::BLACK_MOVES, &Self::BLACK_THREATS),
         };
 
         for from in self.as_mask() {

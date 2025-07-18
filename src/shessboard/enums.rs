@@ -378,6 +378,44 @@ impl ColorPiece {
         }
     }
 
+    pub const fn from_char(c: char) -> Option<Self> {
+        use ColorPiece::*;
+        Some(match c {
+            'P' => WhitePawn,
+            'N' => WhiteKnight,
+            'B' => WhiteBishop,
+            'R' => WhiteRook,
+            'Q' => WhiteQueen,
+            'K' => WhiteKing,
+            'p' => BlackPawn,
+            'n' => BlackKnight,
+            'b' => BlackBishop,
+            'r' => BlackRook,
+            'q' => BlackQueen,
+            'k' => BlackKing,
+            _ => return None,
+        })
+    }
+
+    pub fn from_str(c: &str) -> Option<Self> {
+        use ColorPiece::*;
+        Some(match c {
+            "P" => WhitePawn,
+            "N" => WhiteKnight,
+            "B" => WhiteBishop,
+            "R" => WhiteRook,
+            "Q" => WhiteQueen,
+            "K" => WhiteKing,
+            "p" => BlackPawn,
+            "n" => BlackKnight,
+            "b" => BlackBishop,
+            "r" => BlackRook,
+            "q" => BlackQueen,
+            "k" => BlackKing,
+            _ => return None,
+        })
+    }
+
     pub const fn unicode(&self) -> char {
         use ColorPiece::*;
         match self.color() {

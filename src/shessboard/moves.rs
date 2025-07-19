@@ -34,6 +34,10 @@ impl ProtoMove {
         Mask::nil().set(self.from).set(self.to)
     }
 
+    pub fn positive(&self) -> bool {
+        self.from.index() < self.to.index()
+    }
+
     pub fn makes_king_checked(
         &self,
         active: Mask,
@@ -56,10 +60,11 @@ impl Display for ProtoMove {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(align(8))]
 pub struct Move {
     pub color_and_piece: ColorPiece,
     pub from_to: ProtoMove,
-    pub castling: Option<CastlingSide>,
+    pub castling: Option<ProtoMove>,
     pub capture: Option<(Square, Piece)>,
     pub promotion: Option<Piece>,
 }
@@ -99,10 +104,15 @@ impl Display for Move {
                 sq
             )?;
         }
+        if let Some(p) = self.promotion {
+            let p = ColorPiece::new(self.color_and_piece.color(), p);
+            write!(f, "-{}", p.unicode())?;
+        }
         if let Some(c) = self.castling {
-            match c {
-                CastlingSide::OOO => write!(f, "O-O-O")?,
-                CastlingSide::OO => write!(f, "O-O")?,
+            if self.from_to.to.index() < self.from_to.from.index() {
+                write!(f, "-O-O-O")?;
+            } else {
+                write!(f, "-O-O")?;
             }
         }
         Ok(())
@@ -111,8 +121,9 @@ impl Display for Move {
 
 #[test]
 fn size_fuckery() {
-    assert_eq!(std::mem::size_of::<Move>(), 8);
-    assert_eq!(std::mem::size_of::<Option<Move>>(), 8);
+    assert!(std::mem::size_of::<Move>() <= 8);
+    assert!(std::mem::size_of::<Option<Move>>() == std::mem::size_of::<Move>());
+    assert_eq!(std::mem::align_of::<Move>(), 8);
 }
 
 impl BitBoard {
@@ -131,10 +142,12 @@ impl BitBoard {
             return false;
         }
 
-        match mv.castling {
-            Some(CastlingSide::OOO) if !self.metadata.castling_right(color).ooo => return false,
-            Some(CastlingSide::OO) if !self.metadata.castling_right(color).oo => return false,
-            _ => {}
+        if let Some(rm) = mv.castling {
+            if rm.positive() && !self.metadata.castling_right(color).oo {
+                return false;
+            } else if !rm.positive() && !self.metadata.castling_right(color).ooo {
+                return false;
+            }
         }
 
         if let Some((sq, p)) = mv.capture {
@@ -185,25 +198,17 @@ impl BitBoard {
         }
 
         let (active, passive) = self.color_mut(color);
-        *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
         if let Some((sq, piece)) = mv.capture {
             *passive.piece_mask_mut(piece) ^= sq.as_mask();
         }
+        if let Some(p) = mv.promotion {
+            *active.piece_mask_mut(Piece::Pawn) ^= mv.from_to.from.as_mask();
+            *active.piece_mask_mut(p) ^= mv.from_to.to.as_mask();
+        } else {
+            *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
+        }
         match mv.castling {
-            Some(CastlingSide::OOO) => {
-                *active.piece_mask_mut(Piece::Rook) ^= ProtoMove {
-                    from: Square::at(rook_files.ooo, color.starting_rank()),
-                    to: mv.from_to.to.go(Dir::East).unwrap(),
-                }
-                .as_mask()
-            }
-            Some(CastlingSide::OO) => {
-                *active.piece_mask_mut(Piece::Rook) ^= ProtoMove {
-                    from: Square::at(rook_files.oo, color.starting_rank()),
-                    to: mv.from_to.to.go(Dir::West).unwrap(),
-                }
-                .as_mask()
-            }
+            Some(pm) => *active.piece_mask_mut(Piece::Rook) ^= pm.as_mask(),
             None => {}
         }
     }

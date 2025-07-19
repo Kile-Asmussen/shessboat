@@ -40,6 +40,14 @@ impl<T: Sized + Copy> BoardMap<T> {
     }
 }
 
+impl<T: Default> BoardMap<T> {
+    pub fn reset(&mut self) {
+        for x in &mut self.0 {
+            *x = Default::default()
+        }
+    }
+}
+
 impl BoardMap<Mask> {
     pub fn overlay(&self, mask: Mask) -> Mask {
         mask.iter().map(|sq| self.at(sq)).sum()

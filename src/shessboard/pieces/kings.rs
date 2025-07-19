@@ -184,19 +184,21 @@ impl Kings {
                 king_move = king_move.mirror()
             }
 
-            let king_from_to = ProtoMove {
-                from,
-                to: (if west {
-                    king_move.first()
-                } else {
-                    king_move.last()
-                })
-                .unwrap(),
+            let Some(to) = (if west {
+                king_move.first()
+            } else {
+                king_move.last()
+            }) else {
+                return;
             };
+            let king_from_to = ProtoMove { from, to };
 
             let rook_from_to = ProtoMove {
                 from: Square::at(rook_file, color.starting_rank()),
-                to: king_from_to.to.go(if west { Dir::East } else { Dir::West }).unwrap(),
+                to: king_from_to
+                    .to
+                    .go(if west { Dir::East } else { Dir::West })
+                    .unwrap(),
             };
 
             let rook_move = slide_move_stop(
@@ -227,7 +229,7 @@ impl Kings {
             res.push(Move {
                 color_and_piece: ColorPiece::new(color, Piece::King),
                 from_to: king_from_to,
-                castling: Some(CastlingSide::OOO),
+                castling: Some(rook_from_to),
                 capture: None,
                 promotion: None,
             })

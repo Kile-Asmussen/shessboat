@@ -178,7 +178,7 @@ impl Pawns {
 
             if let Some((to, pawn)) = en_passant {
                 'out: {
-                    if possible_attacks.contains(to) {
+                    if THREATS.at(from).contains(to) {
                         let from_to = ProtoMove { from, to };
 
                         let capture = Some((pawn, Piece::Pawn));

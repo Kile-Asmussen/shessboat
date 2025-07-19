@@ -3,7 +3,7 @@ use std::{default, fmt::Display, str::FromStr};
 use regex::Regex;
 
 use crate::shessboard::{
-    castling::CastlingSide,
+    castling::{CastlingInfo, CastlingSide},
     enums::{File, Piece, Rank},
     moves::Move,
     pieces,
@@ -22,13 +22,20 @@ pub struct Normal {
     pub origin_rank: Option<Rank>,
     pub origin_file: Option<File>,
     pub destination: Square,
+    pub promotion: Option<Piece>,
     pub capture: bool,
 }
 
 impl Notation {
-    pub fn disambiguate(mv: &Move, legal_moves: &[Move]) -> Self {
+    pub fn new(mv: &Move, legal_moves: &[Move]) -> Self {
         match mv.castling {
-            Some(c) => return Self::Castling(c),
+            Some(pm) => {
+                if pm.positive() {
+                    return Self::Castling(CastlingSide::OO);
+                } else {
+                    return Self::Castling(CastlingSide::OOO);
+                }
+            }
             None => {}
         }
 
@@ -36,6 +43,7 @@ impl Notation {
             piece: mv.color_and_piece.piece(),
             origin_rank: None,
             origin_file: None,
+            promotion: mv.promotion,
             destination: mv.from_to.to,
             capture: mv.capture.is_some(),
         };
@@ -63,42 +71,57 @@ impl Notation {
 
     pub fn matches(self, mv: &Move) -> bool {
         match self {
-            Notation::Castling(castling_side) => Some(castling_side) == mv.castling,
+            Notation::Castling(castling_side) => {
+                if let Some(pm) = mv.castling {
+                    if pm.positive() {
+                        castling_side == CastlingSide::OO
+                    } else {
+                        castling_side == CastlingSide::OOO
+                    }
+                } else {
+                    false
+                }
+            }
             Notation::Normal(Normal {
                 piece,
                 origin_rank,
                 origin_file,
                 destination,
+                promotion,
                 capture,
             }) => {
                 mv.color_and_piece.piece() == piece
                     && origin_file.unwrap_or(mv.from_to.from.file()) == mv.from_to.from.file()
                     && origin_rank.unwrap_or(mv.from_to.from.rank()) == mv.from_to.from.rank()
                     && destination == mv.from_to.to
+                    && promotion == mv.promotion
                     && capture == mv.capture.is_some()
             }
         }
     }
 
     pub fn read(s: &str) -> Option<Self> {
-        let pawn_move = Regex::new(r"\A([abcdefgh][12345678])").ok()?;
+        let pawn_move = Regex::new(r"\A([abcdefgh][12345678])(?:=([QRBK]))?").ok()?;
         if let Some(pawn_move) = pawn_move.captures(s) {
             return Some(Notation::Normal(Normal {
                 piece: Piece::Pawn,
                 origin_rank: None,
                 origin_file: None,
                 destination: Self::read_square(pawn_move.get(1)?.as_str())?,
+                promotion: Self::read_piece(pawn_move.get(2).map(|m| m.as_str()).unwrap_or("")),
                 capture: false,
             }));
         }
 
-        let pawn_capture = Regex::new(r"\A([abcdefgh])x([abcdefgh][12345678])").ok()?;
+        let pawn_capture =
+            Regex::new(r"\A([abcdefgh])x([abcdefgh][12345678])(?:=([QRBK]))?").ok()?;
         if let Some(pawn_capture) = pawn_capture.captures(s) {
             return Some(Notation::Normal(Normal {
                 piece: Piece::Pawn,
                 origin_rank: None,
                 origin_file: Some(Self::read_file(pawn_capture.get(1)?.as_str())?),
                 destination: Self::read_square(pawn_capture.get(2)?.as_str())?,
+                promotion: Self::read_piece(pawn_capture.get(3).map(|m| m.as_str()).unwrap_or("")),
                 capture: true,
             }));
         }
@@ -112,6 +135,7 @@ impl Notation {
                 origin_file: Self::read_file(piece_move.get(3)?.as_str()),
                 destination: Self::read_square(piece_move.get(4)?.as_str())?,
                 capture: false,
+                promotion: None,
             }));
         }
 
@@ -124,6 +148,7 @@ impl Notation {
                 origin_file: Self::read_file(piece_capture.get(3)?.as_str()),
                 destination: Self::read_square(piece_capture.get(4)?.as_str())?,
                 capture: true,
+                promotion: None,
             }));
         }
 
@@ -181,6 +206,7 @@ impl Display for Notation {
                 origin_file,
                 destination,
                 capture,
+                promotion,
             }) => {
                 if piece != &Piece::Pawn {
                     write!(f, "{}", piece.white_letter())?;
@@ -195,6 +221,9 @@ impl Display for Notation {
                     write!(f, "x")?;
                 }
                 write!(f, "{}", destination)?;
+                if let Some(p) = promotion {
+                    write!(f, "={}", p.white_letter())?;
+                }
             }
         }
 

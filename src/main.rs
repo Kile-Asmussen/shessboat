@@ -2,19 +2,26 @@
 
 use std::{
     io::{Write, stdin, stdout},
+    str::FromStr,
     thread::sleep,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use colored::Colorize;
-use rand::{rng, seq::SliceRandom};
+use rand::{
+    Rng, rng,
+    rngs::ThreadRng,
+    seq::{IndexedRandom, SliceRandom},
+};
 
 use crate::{
     engine::ShessEngine,
     shessboard::{
+        BitBoard, Metadata,
         algebraic::Notation,
-        boardmap::BoardMap,
+        boardmap::{BoardMap, BoardMapIter},
         enums::{Color, ColorPiece, File, Piece, Rank, Shade},
+        half::HalfBitBoard,
         masks::Mask,
         moves::ProtoMove,
         pieces::{
@@ -29,18 +36,81 @@ pub mod engine;
 pub mod shessboard;
 
 fn main() {
+    interactive_game();
+}
+
+fn random_games_move_enumeration_benchmark() {
+    let n = 10_000;
+    let mut rng = ThreadRng::default();
+    let mut engine = ShessEngine::new();
+    let mut longboard = BoardMap::<Option<ColorPiece>>::new_with(None);
+    let mut longcolor = Color::White;
+    let mut longsearch = Duration::ZERO;
+    let mut longmoves = vec![];
+    let mut moves = vec![];
+    println!("\n  Running {n} random games...\n");
+
+    for _ in 1..=n {
+        engine.set_position(rng.random_range(1..=960));
+
+        while engine.moves.len() > 0
+            && !engine.board.only_kings()
+            && engine.board.metadata.turn() < 1000
+        {
+            let mv = engine.moves.choose(&mut rng).unwrap().clone();
+            let now = Instant::now();
+            engine.apply_move(&mv);
+            let delta = now.elapsed();
+            if delta > longsearch {
+                longsearch = delta;
+                longboard.reset();
+                engine.board.render(&mut longboard);
+                longcolor = engine.to_move().other();
+                longmoves = engine.moves.clone();
+            }
+            moves.push((delta, engine.moves.len()));
+        }
+    }
+
+    println!(
+        "  Longest move enumeration took {:.3} us with total of {} legal moves for {:?}.",
+        longsearch.as_nanos() as f64 / 1000.0,
+        longmoves.len(),
+        longcolor
+    );
+    print_chessboard(&longboard, Mask::nil());
+    for mv in longmoves.chunks(10) {
+        print!("  ");
+        for m in mv {
+            print!("{:<8}", Notation::new(m, &longmoves).to_string());
+        }
+        println!();
+    }
+
+    let avg_duration = moves.iter().map(|(d, _)| d).sum::<Duration>() / moves.len() as u32;
+
+    println!(
+        "\n  Average move enumeration duration was {:.3} us.",
+        avg_duration.as_nanos() as f64 / 1000.0
+    );
+
+    println!()
+}
+
+fn interactive_game() {
+    let mut rng = ThreadRng::default();
     let mut engine = ShessEngine::new();
     engine.set_position(518);
     let mut move_log = Vec::<(Notation, &'static str)>::new();
     let mut highlight = Mask::nil();
 
-    loop {
+    'redraw: loop {
         print!("\x1B[2J\x1B[1;1H");
         stdout().flush();
         print_chessboard(&engine.as_boardmap(), highlight);
-        loop {
+        'command_loop: loop {
             let mut s = String::new();
-            if engine.moves.len() == 0 {
+            if engine.moves.len() == 0 || engine.board.only_kings() {
                 let res = if engine.board.is_in_check(engine.to_move()) {
                     match engine.to_move() {
                         Color::White => "0–1",
@@ -55,84 +125,93 @@ fn main() {
             }
             stdout().flush();
             stdin().read_line(&mut s);
-            let s = s.trim().split(|c: char| c.is_whitespace()).collect::<Vec<_>>();
-            if s.len() < 1 {
+            let command = s
+                .trim()
+                .split(|c: char| c.is_whitespace())
+                .collect::<Vec<_>>();
+            if command.len() < 1 {
                 continue;
             }
-            match s[0] {
+            match command[0] {
                 "exit" => {
-                    return;
+                    break 'redraw;
                 }
                 "clear" => {
-                    break;
+                    continue 'redraw;
                 }
                 "pos" => {
-                    if let Some(n) = s.get(1) {
+                    if let Some(n) = command.get(1) {
                         if let Ok(n) = n.parse() {
                             engine.set_position(n);
                             move_log.clear();
                             highlight = Mask::nil();
-                            break;
+                            continue 'redraw;
                         } else {
                             println!("Invalid number");
-                            continue;
+                            continue 'command_loop;
                         }
                     } else {
                         engine.set_position(518);
                         move_log.clear();
                         highlight = Mask::nil();
-                        break;
+                        continue 'redraw;
                     }
                 }
                 "reset" => {
                     highlight = Mask::nil();
                     engine.reset();
                     move_log.clear();
-                    break;
+                    continue 'redraw;
                 }
                 "threats" => {
-                    highlight = if let Some(&"W" | &"w") = s.get(1) {
+                    highlight = if let Some(&"W" | &"w") = command.get(1) {
                         engine.threat_mask(Color::White)
-                    } else if let Some(&"B" | &"b") = s.get(1) {
+                    } else if let Some(&"B" | &"b") = command.get(1) {
                         engine.threat_mask(Color::Black)
                     } else {
                         engine.threat_mask(engine.to_move())
                     };
-                    break;
+                    continue 'redraw;
                 }
                 "q" => {
                     highlight = Mask::nil();
-                    break;
+                    continue 'redraw;
                 }
                 "i" => {
-                    if let (Some(p), Some(sq)) = (s.get(1), s.get(2)) {
+                    if let (Some(p), Some(sq)) = (command.get(1), command.get(2)) {
                         if let (Some(p), Some(sq)) =
                             (ColorPiece::from_str(*p), Notation::read_square(*sq))
                         {
                             engine.place(Some(p), sq);
-                            break;
+                            continue 'redraw;
                         } else {
                             println!("Format: <piece letter> <square>");
-                            continue;
+                            continue 'command_loop;
                         }
                     } else {
                         println!("Format: <piece letter> <square>");
-                        continue;
+                        continue 'command_loop;
                     }
                 }
                 "d" => {
-                    if let Some(sq) = s.get(1) {
+                    if let Some(sq) = command.get(1) {
                         if let Some(sq) = Notation::read_square(sq) {
                             engine.place(None, sq);
-                            break;
+                            continue 'redraw;
                         } else {
                             println!("Format: <square>");
-                            continue;
+                            continue 'command_loop;
                         }
                     } else {
                         println!("Format: <square>");
-                        continue;
+                        continue 'command_loop;
                     }
+                }
+                "w" => {
+                    engine.set_turn(Color::White, engine.board.metadata.turn());
+                }
+                "b" => {
+                    engine.set_turn(Color::Black, engine.board.metadata.turn());
                 }
                 "ls" => {
                     let legal_moves = engine.printable_moves();
@@ -141,11 +220,31 @@ fn main() {
                     }
                     for mvs in legal_moves.chunks(8) {
                         for mv in mvs {
-                            print!("{}", mv);
+                            print!("{} ", mv);
                         }
                         println!();
                     }
-                    continue;
+                    continue 'command_loop;
+                }
+                "r" => {
+                    let n = if let Some(n) = command.get(1) {
+                        (*n).parse().unwrap_or(1)
+                    } else {
+                        1
+                    };
+                    for _ in 1..=n {
+                        let Some(mv) = engine.moves.choose(&mut rng) else {
+                            continue 'redraw;
+                        };
+                        let not = Notation::new(&mv, &engine.moves);
+                        match engine.normal_move(not) {
+                            Ok(ns) => {
+                                move_log.push(ns.0);
+                            }
+                            Err(e) => {}
+                        }
+                    }
+                    continue 'redraw;
                 }
                 "log" => {
                     for (n, mv) in move_log.chunks(2).enumerate() {
@@ -158,31 +257,15 @@ fn main() {
                 }
                 "meta" => {
                     println!("{}", engine.printable_metadata());
-                    continue;
+                    continue 'command_loop;
                 }
                 "cast" => {
-                    if let Some(&"W" | &"w") = s.get(1) {
-                        engine.board.metadata.white_castling.ooo = s.contains(&"ooo");
-                        engine.board.metadata.white_castling.oo = s.contains(&"oo");
-                    } else if let Some(&"B" | &"b") = s.get(1) {
-                        engine.board.metadata.black_castling.ooo = s.contains(&"ooo");
-                        engine.board.metadata.black_castling.oo = s.contains(&"oo");
-                    }
-                }
-                "mv" => {
-                    if let (Some(sq1), Some(sq2)) = (s.get(1), s.get(2)) {
-                        if let (Some(sq1), Some(sq2)) =
-                            (Notation::read_square(*sq1), Notation::read_square(*sq2))
-                        {
-                            engine.cheat_move(ProtoMove { from: sq1, to: sq2 });
-                            break;
-                        } else {
-                            println!("Format: <square> <square>");
-                            continue;
-                        }
-                    } else {
-                        println!("Format: <square> <square>");
-                        continue;
+                    if let Some(&"W" | &"w") = command.get(1) {
+                        engine.board.metadata.white_castling.ooo = command.contains(&"ooo");
+                        engine.board.metadata.white_castling.oo = command.contains(&"oo");
+                    } else if let Some(&"B" | &"b") = command.get(1) {
+                        engine.board.metadata.black_castling.ooo = command.contains(&"ooo");
+                        engine.board.metadata.black_castling.oo = command.contains(&"oo");
                     }
                 }
                 s => {
@@ -191,16 +274,16 @@ fn main() {
                             Ok(ns) => {
                                 move_log.push(ns.0);
                                 highlight = ns.1.from_to.as_mask();
-                                break;
+                                continue 'redraw;
                             }
                             Err(e) => {
                                 println!("Error: {}", e);
-                                continue;
+                                continue 'command_loop;
                             }
                         }
                     } else {
                         println!("Unrecognized command");
-                        continue;
+                        continue 'command_loop;
                     }
                 }
             }
@@ -220,6 +303,7 @@ fn print_chessboard(pieces: &BoardMap<Option<ColorPiece>>, highlights: Mask) {
         Rank::_1,
     ];
     for rank in chessboard {
+        print!("  ");
         for sq in rank.as_mask().iter() {
             let piece = pieces.at(sq);
             let mut fg_color = match piece {
@@ -267,11 +351,14 @@ fn print_chessboard(pieces: &BoardMap<Option<ColorPiece>>, highlights: Mask) {
 
             print!(
                 "{}",
-                format!(" {} ", print_char).color(fg_color).on_color(bg_color)
+                format!(" {} ", print_char)
+                    .color(fg_color)
+                    .on_color(bg_color)
             )
         }
         println!(" {}", rank.as_rank() + 1);
     }
+    print!("  ");
     for c in "abcdefgh".chars() {
         print!(" {} ", c);
     }

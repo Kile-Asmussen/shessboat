@@ -123,10 +123,12 @@ impl BitBoardHasher {
         let mut res = same.hash_piece(mv.color_and_piece.piece(), mv.from_to.from)
             ^ same.hash_piece(mv.color_and_piece.piece(), mv.from_to.to);
 
-        match mv.castling {
-            Some(CastlingSide::OOO) => res ^= same.castling.ooo,
-            Some(CastlingSide::OO) => res ^= same.castling.oo,
-            None => {}
+        if let Some(pm) = mv.castling {
+            if pm.positive() {
+                res ^= same.castling.oo
+            } else {
+                res ^= same.castling.ooo
+            }
         }
 
         res

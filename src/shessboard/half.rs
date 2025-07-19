@@ -31,6 +31,17 @@ impl HalfBitBoard {
         }
     }
 
+    pub fn nil() -> Self {
+        Self {
+            kings: Kings::nil(),
+            queens: Queens::nil(),
+            rooks: Rooks::nil(),
+            bishops: Bishops::nil(),
+            knights: Knights::nil(),
+            pawns: Pawns::nil(),
+        }
+    }
+
     pub fn render(&self, board: &mut BoardMap<Option<ColorPiece>>, color: Color) {
         self.kings.render(board, color);
         self.queens.render(board, color);
@@ -97,9 +108,18 @@ impl HalfBitBoard {
         let same = Mask::nil();
 
         let king = self.kings.threats(same);
-        let queen = self.queens.captured(cap).threats(Rooks::nil(), Bishops::nil(), same, opposite);
-        let rook = self.rooks.captured(cap).threats(Queens::nil(), same, opposite);
-        let bishop = self.bishops.captured(cap).threats(Queens::nil(), same, opposite);
+        let queen = self
+            .queens
+            .captured(cap)
+            .threats(Rooks::nil(), Bishops::nil(), same, opposite);
+        let rook = self
+            .rooks
+            .captured(cap)
+            .threats(Queens::nil(), same, opposite);
+        let bishop = self
+            .bishops
+            .captured(cap)
+            .threats(Queens::nil(), same, opposite);
         let knight = self.knights.captured(cap).threats(same);
         let pawn = self.pawns.captured(cap).threats(color, same);
 
@@ -107,20 +127,28 @@ impl HalfBitBoard {
     }
 
     pub fn set_piece(&mut self, piece: Option<Piece>, sq: Square) {
+        for m in [
+            self.kings.mut_mask(),
+            self.queens.mut_mask(),
+            self.rooks.mut_mask(),
+            self.bishops.mut_mask(),
+            self.knights.mut_mask(),
+            self.pawns.mut_mask(),
+        ] {
+            *m = m.unset(sq)
+        }
         if let Some(p) = piece {
             let x = self.piece_mask_mut(p);
             *x = x.set(sq);
-        } else {
-            for m in [
-                self.kings.mut_mask(),
-                self.queens.mut_mask(),
-                self.rooks.mut_mask(),
-                self.bishops.mut_mask(),
-                self.knights.mut_mask(),
-                self.pawns.mut_mask(),
-            ] {
-                *m = m.unset(sq)
-            }
         }
+    }
+
+    pub fn only_king(&self) -> bool {
+        self.kings.as_mask().any()
+            && self.queens == Queens::nil()
+            && self.rooks == Rooks::nil()
+            && self.bishops == Bishops::nil()
+            && self.knights == Knights::nil()
+            && self.pawns == Pawns::nil()
     }
 }

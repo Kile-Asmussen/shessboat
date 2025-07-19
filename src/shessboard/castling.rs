@@ -1,3 +1,5 @@
+use crate::shessboard::{enums::File, moves::ProtoMove};
+
 pub type CastlingRights = CastlingInfo<bool>;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]

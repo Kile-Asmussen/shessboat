@@ -38,10 +38,7 @@ impl BitBoard {
     }
 
     pub fn empty() -> Self {
-        Self::new_board(
-            &BoardMap::new_with(None),
-            Metadata::new_starting_array(chess_960(518)),
-        )
+        Self::new_board(&BoardMap::new_with(None), Metadata::empty())
     }
 
     pub fn new_960(n: usize) -> Self {
@@ -101,6 +98,12 @@ impl BitBoard {
         }
     }
 
+    pub fn overwrite(&mut self, board: &BoardMap<Option<ColorPiece>>) {
+        for (sq, p) in board {
+            self.set_piece(p, sq);
+        }
+    }
+
     pub fn active(&self) -> &HalfBitBoard {
         self.color(self.metadata.to_move)
     }
@@ -120,6 +123,10 @@ impl BitBoard {
                 None,
             ))
         .any()
+    }
+
+    pub fn only_kings(&self) -> bool {
+        self.white.only_king() && self.black.only_king()
     }
 }
 
@@ -185,6 +192,28 @@ impl Metadata {
             white_castling: CastlingRights::new(),
             black_castling: CastlingRights::new(),
             rook_files,
+            en_passant: None,
+        }
+    }
+
+    fn empty() -> Metadata {
+        Self {
+            hash: 0,
+            to_move: Color::White,
+            half_turn: 0,
+            change_happened_at: 0,
+            white_castling: CastlingRights {
+                ooo: false,
+                oo: false,
+            },
+            black_castling: CastlingRights {
+                ooo: false,
+                oo: false,
+            },
+            rook_files: CastlingInfo {
+                ooo: File::A,
+                oo: File::H,
+            },
             en_passant: None,
         }
     }

@@ -36,7 +36,7 @@ pub mod engine;
 pub mod shessboard;
 
 fn main() {
-    interactive_game();
+    random_games_move_enumeration_benchmark();
 }
 
 fn random_games_move_enumeration_benchmark() {

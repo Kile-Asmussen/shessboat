@@ -18,7 +18,7 @@ impl ShessEngine {
     pub fn new() -> Self {
         Self {
             board: BitBoard::empty(),
-            moves: vec![],
+            moves: Vec::with_capacity(50),
         }
     }
 

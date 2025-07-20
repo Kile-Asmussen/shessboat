@@ -150,10 +150,13 @@ impl Metadata {
         }
     }
 
-    pub fn castling_right_mut(&mut self, color: Color) -> &mut CastlingRights {
+    pub fn castling_right_mut(
+        &mut self,
+        color: Color,
+    ) -> (&mut CastlingRights, &mut CastlingRights) {
         match color {
-            Color::White => &mut self.white_castling,
-            Color::Black => &mut self.black_castling,
+            Color::White => (&mut self.white_castling, &mut self.black_castling),
+            Color::Black => (&mut self.black_castling, &mut self.white_castling),
         }
     }
 

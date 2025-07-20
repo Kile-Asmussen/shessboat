@@ -352,34 +352,35 @@ impl BitBoard {
         self.metadata.en_passant = mv.en_passant_square();
         let rook_files = self.metadata.rook_files;
 
-        let castling = self.metadata.castling_right_mut(color);
+        let (active_castling, passive_castling) = self.metadata.castling_right_mut(color);
 
         if piece == Piece::King {
-            *castling = CastlingRights {
-                ooo: false,
-                oo: false,
-            };
+            active_castling.ooo = false;
+            active_castling.oo = false;
         }
 
         if piece == Piece::Rook {
-            if castling.ooo
-                && mv.from_to.from.rank() == color.starting_rank()
-                && mv.from_to.from.file() == rook_files.ooo
-            {
-                castling.ooo = false;
+            if mv.from_to.from == Square::at(rook_files.ooo, color.starting_rank()) {
+                active_castling.ooo = false;
             }
 
-            if castling.oo
-                && mv.from_to.from.rank() == color.starting_rank()
-                && mv.from_to.from.file() == rook_files.oo
-            {
-                castling.oo = false;
+            if mv.from_to.from == Square::at(rook_files.oo, color.starting_rank()) {
+                active_castling.oo = false;
             }
         }
 
         let (active, passive) = self.color_mut(color);
         if let Some((sq, piece)) = mv.capture {
             *passive.piece_mask_mut(piece) ^= sq.as_mask();
+            if piece == Piece::Rook {
+                if sq == Square::at(rook_files.ooo, color.other().starting_rank()) {
+                    passive_castling.ooo = false;
+                }
+
+                if sq == Square::at(rook_files.oo, color.other().starting_rank()) {
+                    passive_castling.oo = false;
+                }
+            }
         }
         if let Some(p) = mv.promotion {
             *active.piece_mask_mut(Piece::Pawn) ^= mv.from_to.from.as_mask();

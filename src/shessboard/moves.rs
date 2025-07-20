@@ -341,15 +341,16 @@ impl BitBoard {
 
     pub fn apply(&mut self, mv: &Move) {
         let (color, piece) = mv.color_and_piece.split();
+
+        // update metadata
         self.metadata.to_move = color.other();
         if piece == Piece::Pawn || mv.capture.is_some() {
             self.metadata.change_happened_at = self.metadata.half_turn;
         }
         self.metadata.half_turn += 1;
-
-        let kings = self.color(color).kings;
-
         self.metadata.en_passant = mv.en_passant_square();
+
+        // calculate changes to castling rights
         let rook_files = self.metadata.rook_files;
 
         let (active_castling, passive_castling) = self.metadata.castling_right_mut(color);
@@ -369,9 +370,7 @@ impl BitBoard {
             }
         }
 
-        let (active, passive) = self.color_mut(color);
-        if let Some((sq, piece)) = mv.capture {
-            *passive.piece_mask_mut(piece) ^= sq.as_mask();
+        if let Some((sq, Piece::Rook)) = mv.capture {
             if piece == Piece::Rook {
                 if sq == Square::at(rook_files.ooo, color.other().starting_rank()) {
                     passive_castling.ooo = false;
@@ -381,6 +380,12 @@ impl BitBoard {
                     passive_castling.oo = false;
                 }
             }
+        }
+
+        // calculate changes to board
+        let (active, passive) = self.color_mut(color);
+        if let Some((sq, piece)) = mv.capture {
+            *passive.piece_mask_mut(piece) ^= sq.as_mask();
         }
         if let Some(p) = mv.promotion {
             *active.piece_mask_mut(Piece::Pawn) ^= mv.from_to.from.as_mask();

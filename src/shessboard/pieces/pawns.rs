@@ -92,12 +92,12 @@ impl Pawns {
         }
     }
 
-    pub fn threats(&self, color: Color, same: Mask) -> Mask {
+    pub const fn threats(&self, color: Color) -> Mask {
         let threat_masks = match color {
             Color::White => &Self::WHITE_THREATS,
             Color::Black => &Self::BLACK_THREATS,
         };
-        threat_masks.overlay(self.as_mask())
+        threat_masks.overlays(self.as_mask())
     }
 
     pub const fn promotion_rank(color: Color) -> Rank {

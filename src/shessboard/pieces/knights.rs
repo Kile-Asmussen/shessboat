@@ -83,8 +83,8 @@ impl Knights {
         }
     }
 
-    pub fn threats(&self, same: Mask) -> Mask {
-        Self::MOVES.overlay(self.as_mask()) & !same
+    pub const fn threats(&self) -> Mask {
+        Self::MOVES.overlays(self.as_mask())
     }
 
     pub fn enumerate_legal_moves(

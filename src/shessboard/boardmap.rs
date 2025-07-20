@@ -49,8 +49,22 @@ impl<T: Default> BoardMap<T> {
 }
 
 impl BoardMap<Mask> {
-    pub fn overlay(&self, mask: Mask) -> Mask {
-        mask.iter().map(|sq| self.at(sq)).sum()
+    pub const fn overlays(&self, mask: Mask) -> Mask {
+        let mut res = Mask::nil();
+        let mut iter = mask.iter();
+        while let Some(sq) = iter.next() {
+            res = res.overlay(self.at(sq));
+        }
+        res
+    }
+
+    pub const fn overlaps(&self, mask: Mask) -> Mask {
+        let mut res = Mask::nil();
+        let mut iter = mask.iter();
+        while let Some(sq) = iter.next() {
+            res = res.overlap(self.at(sq));
+        }
+        res
     }
 }
 

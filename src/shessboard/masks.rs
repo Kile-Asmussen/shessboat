@@ -38,7 +38,15 @@ impl Mask {
     }
 
     pub const fn overlap(&self, other: Mask) -> Mask {
-        Mask(self.as_u64() & other.as_u64())
+        Mask::new(self.as_u64() & other.as_u64())
+    }
+
+    pub const fn overlay(&self, other: Mask) -> Mask {
+        Mask::new(self.as_u64() | other.as_u64())
+    }
+
+    pub const fn differences(&self, other: Mask) -> Mask {
+        Mask::new(self.as_u64() ^ other.as_u64())
     }
 
     pub const fn as_u64(&self) -> u64 {
@@ -111,13 +119,13 @@ impl BitOr for Mask {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+        self.overlay(rhs)
     }
 }
 
 impl BitOrAssign for Mask {
     fn bitor_assign(&mut self, rhs: Self) {
-        self.0 |= rhs.0;
+        *self = self.overlay(rhs)
     }
 }
 
@@ -125,13 +133,13 @@ impl BitAnd for Mask {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0)
+        self.overlap(rhs)
     }
 }
 
 impl BitAndAssign for Mask {
     fn bitand_assign(&mut self, rhs: Self) {
-        self.0 &= rhs.0
+        *self = self.overlap(rhs)
     }
 }
 
@@ -139,13 +147,13 @@ impl BitXor for Mask {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
-        Self(self.0 ^ rhs.0)
+        self.differences(rhs)
     }
 }
 
 impl BitXorAssign for Mask {
     fn bitxor_assign(&mut self, rhs: Self) {
-        self.0 ^= rhs.0
+        *self = self.differences(rhs)
     }
 }
 

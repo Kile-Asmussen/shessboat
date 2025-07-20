@@ -3,14 +3,16 @@ use std::{fmt::Display, fs::metadata};
 
 use crate::shessboard::{
     BitBoard, CastlingInfo,
+    algebraic::Notation,
     castling::{CastlingRights, CastlingSide},
-    enums::{Color, ColorPiece, Dir, Piece, Rank},
+    enums::{Color, ColorPiece, Dir, File, Piece, Rank},
     half::HalfBitBoard,
     masks::Mask,
     pieces::{
         kings::Kings,
         knights::{self, Knights},
         pawns::{self, Pawns},
+        rooks::Rooks,
     },
     squares::Square,
 };
@@ -51,6 +53,184 @@ impl ProtoMove {
             .overlap(king.as_mask())
             .any()
     }
+}
+
+#[test]
+fn rook_captured_piece_hypothetical() {
+    let mut board = BitBoard::empty();
+
+    board.black.pawns = Pawns::new(Square::at(File::D, Rank::_4).as_mask());
+
+    board.white.rooks = Rooks::new(Square::at(File::H, Rank::_4).as_mask());
+
+    assert_eq!(
+        board
+            .white
+            .threats(Color::White, board.black.as_mask(), None),
+        Mask::board([
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00011110, //4
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            // abcdefgh
+        ])
+    );
+
+    assert_eq!(
+        board.white.threats(
+            Color::White,
+            board.black.as_mask(),
+            Some((Square::at(File::H, Rank::_4), Piece::Rook))
+        ),
+        Mask::nil()
+    );
+
+    assert_eq!(
+        board.white.threats(
+            Color::White,
+            board.black.as_mask(),
+            Some((Square::at(File::D, Rank::_4), Piece::Pawn))
+        ),
+        Mask::board([
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00011110, //4
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            // abcdefgh
+        ])
+    );
+
+    assert_eq!(
+        board.white.threats(
+            Color::White,
+            board.black.as_mask()
+                ^ ProtoMove {
+                    from: Square::at(File::D, Rank::_4),
+                    to: Square::at(File::D, Rank::_3),
+                }
+                .as_mask(),
+            None
+        ),
+        Mask::board([
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_11111110, //4
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            // abcdefgh
+        ])
+    );
+
+    board.white.pawns = Pawns::new(Square::at(File::E, Rank::_4).as_mask());
+
+    assert_eq!(
+        board
+            .white
+            .threats(Color::White, board.black.as_mask(), None),
+        Mask::board([
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00010101,
+            0b_00001110, //4
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            // abcdefgh
+        ])
+    );
+
+    assert_eq!(
+        board.white.threats(
+            Color::White,
+            board.black.as_mask(),
+            Some((Square::at(File::E, Rank::_4), Piece::Pawn))
+        ),
+        Mask::board([
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00011110, //4
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            // abcdefgh
+        ])
+    );
+
+    assert_eq!(
+        board.white.threats(
+            Color::White,
+            board.black.as_mask()
+                ^ ProtoMove {
+                    from: Square::at(File::D, Rank::_4),
+                    to: Square::at(File::D, Rank::_3),
+                }
+                .as_mask(),
+            Some((Square::at(File::E, Rank::_4), Piece::Pawn))
+        ),
+        Mask::board([
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            0b_11111110, //4
+            0b_00000001,
+            0b_00000001,
+            0b_00000001,
+            // abcdefgh
+        ])
+    );
+}
+
+#[test]
+fn en_passant_into_check() {
+    let mut board = BitBoard::empty();
+
+    board.metadata.to_move = Color::Black;
+    board.metadata.en_passant =
+        Some((Square::at(File::E, Rank::_3), Square::at(File::E, Rank::_4)));
+
+    board.white.pawns = Pawns::new(Square::at(File::E, Rank::_4).as_mask());
+    board.black.pawns = Pawns::new(Square::at(File::D, Rank::_4).as_mask());
+
+    board.white.kings = Kings::new(Square::at(File::H, Rank::_8).as_mask());
+    board.black.kings = Kings::new(Square::at(File::A, Rank::_4).as_mask());
+
+    board.white.rooks = Rooks::new(Square::at(File::H, Rank::_4).as_mask());
+
+    let en_passant = ProtoMove {
+        from: Square::at(File::D, Rank::_4),
+        to: Square::at(File::E, Rank::_3),
+    };
+    let captured_pawn = Some((Square::at(File::E, Rank::_4), Piece::Pawn));
+
+    assert!(en_passant.makes_king_checked(
+        board.black.as_mask(),
+        board.black.kings,
+        captured_pawn,
+        &board.white,
+        Color::White,
+    ));
+
+    let mut moves = vec![];
+    board.generate_moves(&mut moves);
+
+    let not = Notation::read("dxe3").unwrap();
+
+    assert_eq!(not.find(&moves), Vec::<&Move>::new());
 }
 
 impl Display for ProtoMove {

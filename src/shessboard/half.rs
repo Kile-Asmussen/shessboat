@@ -51,16 +51,17 @@ impl HalfBitBoard {
         self.pawns.render(board, color);
     }
 
-    pub fn as_mask(&self) -> Mask {
-        self.kings.as_mask()
-            | self.queens.as_mask()
-            | self.rooks.as_mask()
-            | self.bishops.as_mask()
-            | self.knights.as_mask()
-            | self.pawns.as_mask()
+    pub const fn as_mask(&self) -> Mask {
+        self.kings
+            .as_mask()
+            .overlay(self.queens.as_mask())
+            .overlay(self.rooks.as_mask())
+            .overlay(self.bishops.as_mask())
+            .overlay(self.knights.as_mask())
+            .overlay(self.pawns.as_mask())
     }
 
-    pub fn piece_mask(&self, piece: Piece) -> Mask {
+    pub const fn piece_mask(&self, piece: Piece) -> Mask {
         match piece {
             Piece::Pawn => self.pawns.as_mask(),
             Piece::Knight => self.knights.as_mask(),
@@ -71,7 +72,7 @@ impl HalfBitBoard {
         }
     }
 
-    pub fn piece_mask_mut(&mut self, piece: Piece) -> &mut Mask {
+    pub const fn piece_mask_mut(&mut self, piece: Piece) -> &mut Mask {
         match piece {
             Piece::Pawn => self.pawns.mut_mask(),
             Piece::Knight => self.knights.mut_mask(),
@@ -82,7 +83,14 @@ impl HalfBitBoard {
         }
     }
 
-    pub fn delete(&mut self, sq: Square) {}
+    pub const fn delete(&mut self, sq: Square) {
+        self.kings = Kings::new(self.kings.as_mask().unset(sq));
+        self.queens = Queens::new(self.queens.as_mask().unset(sq));
+        self.rooks = Rooks::new(self.rooks.as_mask().unset(sq));
+        self.bishops = Bishops::new(self.bishops.as_mask().unset(sq));
+        self.knights = Knights::new(self.knights.as_mask().unset(sq));
+        self.pawns = Pawns::new(self.pawns.as_mask().unset(sq));
+    }
 
     pub fn piece_at(&self, sq: Square) -> Option<Piece> {
         let sq = sq.as_mask();
@@ -103,27 +111,30 @@ impl HalfBitBoard {
         }
     }
 
-    pub fn threats(&self, color: Color, opposite: Mask, cap: Option<(Square, Piece)>) -> Mask {
-        let opposite = opposite | self.as_mask();
-        let same = Mask::nil();
+    pub const fn threats(
+        &self,
+        color: Color,
+        mut opposite: Mask,
+        cap: Option<(Square, Piece)>,
+    ) -> Mask {
+        let mut blocking = self.as_mask();
+        if let Some((sq, _)) = cap {
+            blocking = blocking.unset(sq)
+        }
+        blocking = blocking.overlay(opposite);
 
-        let king = self.kings.threats(same);
-        let queen = self
-            .queens
-            .captured(cap)
-            .threats(Rooks::nil(), Bishops::nil(), same, opposite);
-        let rook = self
-            .rooks
-            .captured(cap)
-            .threats(Queens::nil(), same, opposite);
-        let bishop = self
-            .bishops
-            .captured(cap)
-            .threats(Queens::nil(), same, opposite);
-        let knight = self.knights.captured(cap).threats(same);
-        let pawn = self.pawns.captured(cap).threats(color, same);
+        let king = self.kings.threats();
+        let queen = self.queens.captured(cap).threats(blocking);
+        let rook = self.rooks.captured(cap).threats(blocking);
+        let bishop = self.bishops.captured(cap).threats(blocking);
+        let knight = self.knights.captured(cap).threats();
+        let pawn = self.pawns.captured(cap).threats(color);
 
-        king | queen | rook | bishop | knight | pawn
+        king.overlay(queen)
+            .overlay(rook)
+            .overlay(bishop)
+            .overlay(knight)
+            .overlay(pawn)
     }
 
     pub fn set_piece(&mut self, piece: Option<Piece>, sq: Square) {

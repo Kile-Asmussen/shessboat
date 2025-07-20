@@ -52,12 +52,12 @@ impl Bishops {
         }
     }
 
-    pub fn threats(&self, queens: Queens, same: Mask, opposite: Mask) -> Mask {
-        let mask = self.as_mask() | queens.as_mask();
-        Queens::directional_threats(mask, &Queens::NORTHWEST, true, same, opposite)
-            | Queens::directional_threats(mask, &Queens::NORTHEAST, true, same, opposite)
-            | Queens::directional_threats(mask, &Queens::SOUTHEAST, false, same, opposite)
-            | Queens::directional_threats(mask, &Queens::SOUTHWEST, false, same, opposite)
+    pub const fn threats(&self, blockers: Mask) -> Mask {
+        let this = Queens::new(self.as_mask());
+        this.directional_threats(&Queens::NORTHWEST, true, blockers)
+            .overlay(this.directional_threats(&Queens::NORTHEAST, true, blockers))
+            .overlay(this.directional_threats(&Queens::SOUTHEAST, false, blockers))
+            .overlay(this.directional_threats(&Queens::SOUTHWEST, false, blockers))
     }
 
     pub fn enumerate_legal_moves(

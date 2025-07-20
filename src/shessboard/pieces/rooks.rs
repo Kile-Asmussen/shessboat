@@ -47,12 +47,12 @@ impl Rooks {
         }
     }
 
-    pub fn threats(&self, queens: Queens, same: Mask, opposite: Mask) -> Mask {
-        let mask = self.as_mask() | queens.as_mask();
-        Queens::directional_threats(mask, &Queens::NORTH, true, same, opposite)
-            | Queens::directional_threats(mask, &Queens::EAST, true, same, opposite)
-            | Queens::directional_threats(mask, &Queens::SOUTH, false, same, opposite)
-            | Queens::directional_threats(mask, &Queens::WEST, false, same, opposite)
+    pub const fn threats(&self, blockers: Mask) -> Mask {
+        let this = Queens::new(self.as_mask());
+        this.directional_threats(&Queens::NORTH, true, blockers)
+            .overlay(this.directional_threats(&Queens::EAST, true, blockers))
+            .overlay(this.directional_threats(&Queens::SOUTH, false, blockers))
+            .overlay(this.directional_threats(&Queens::WEST, false, blockers))
     }
 
     pub fn enumerate_legal_moves(

@@ -86,30 +86,29 @@ impl Queens {
         res
     }
 
-    pub fn threats(&self, rooks: Rooks, bishops: Bishops, same: Mask, opposite: Mask) -> Mask {
-        let bmask = self.as_mask() | bishops.as_mask();
-        let rmask = self.as_mask() | rooks.as_mask();
-        Self::directional_threats(bmask, &Self::NORTHWEST, true, same, opposite)
-            | Self::directional_threats(rmask, &Self::NORTH, true, same, opposite)
-            | Self::directional_threats(bmask, &Self::NORTHEAST, true, same, opposite)
-            | Self::directional_threats(rmask, &Self::EAST, true, same, opposite)
-            | Self::directional_threats(bmask, &Self::SOUTHEAST, false, same, opposite)
-            | Self::directional_threats(rmask, &Self::SOUTH, false, same, opposite)
-            | Self::directional_threats(bmask, &Self::SOUTHWEST, false, same, opposite)
-            | Self::directional_threats(rmask, &Self::WEST, false, same, opposite)
+    pub const fn threats(&self, pieces: Mask) -> Mask {
+        let mask = self.as_mask();
+        self.directional_threats(&Self::NORTHWEST, true, pieces)
+            .overlay(self.directional_threats(&Self::NORTH, true, pieces))
+            .overlay(self.directional_threats(&Self::NORTHEAST, true, pieces))
+            .overlay(self.directional_threats(&Self::EAST, true, pieces))
+            .overlay(self.directional_threats(&Self::SOUTHEAST, false, pieces))
+            .overlay(self.directional_threats(&Self::SOUTH, false, pieces))
+            .overlay(self.directional_threats(&Self::SOUTHWEST, false, pieces))
+            .overlay(self.directional_threats(&Self::WEST, false, pieces))
     }
 
-    pub fn directional_threats(
-        pieces: Mask,
+    pub const fn directional_threats(
+        &self,
         move_masks: &BoardMap<Mask>,
         positive: bool,
-        same: Mask,
-        opposite: Mask,
+        blockers: Mask,
     ) -> Mask {
         let mut res = Mask::nil();
-        for sq in pieces {
+        let mut iter = self.as_mask().iter();
+        while let Some(sq) = iter.next() {
             let move_mask = move_masks.at(sq);
-            res |= slide_move_stop(positive, move_mask, same, opposite);
+            res = res.overlay(slide_move_stop(positive, move_mask, Mask::nil(), blockers));
         }
         res
     }

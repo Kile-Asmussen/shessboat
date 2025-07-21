@@ -18,12 +18,12 @@ use crate::{
     interactive::ShessInteractor,
     shessboard::{
         BitBoard, Metadata,
-        algebraic::Notation,
         boardmap::{BoardMap, BoardMapIter},
         enums::{Color, ColorPiece, File, Piece, Rank, Shade},
         half::HalfBitBoard,
         masks::Mask,
         moves::ProtoMove,
+        notation::Algebraic,
         pieces::{
             bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
             rooks::Rooks, slide_move_stop,
@@ -32,6 +32,7 @@ use crate::{
     },
 };
 
+pub mod engine;
 pub mod interactive;
 pub mod shessboard;
 
@@ -82,7 +83,7 @@ fn random_games_move_enumeration_benchmark() {
     for mv in longmoves.chunks(10) {
         print!("  ");
         for m in mv {
-            print!("{:<8}", Notation::new(m, &longmoves).to_string());
+            print!("{:<8}", Algebraic::new(m, &longmoves).to_string());
         }
         println!();
     }
@@ -101,7 +102,7 @@ fn interactive_game() {
     let mut rng = ThreadRng::default();
     let mut engine = ShessInteractor::new();
     engine.set_position(518);
-    let mut move_log = Vec::<(Notation, &'static str)>::new();
+    let mut move_log = Vec::<(Algebraic, &'static str)>::new();
     let mut highlight = Mask::nil();
 
     'redraw: loop {
@@ -180,7 +181,7 @@ fn interactive_game() {
                 "i" => {
                     if let (Some(p), Some(sq)) = (command.get(1), command.get(2)) {
                         if let (Some(p), Some(sq)) =
-                            (ColorPiece::from_str(*p), Notation::read_square(*sq))
+                            (ColorPiece::from_str(*p), Algebraic::read_square(*sq))
                         {
                             engine.place(Some(p), sq);
                             continue 'redraw;
@@ -195,7 +196,7 @@ fn interactive_game() {
                 }
                 "d" => {
                     if let Some(sq) = command.get(1) {
-                        if let Some(sq) = Notation::read_square(sq) {
+                        if let Some(sq) = Algebraic::read_square(sq) {
                             engine.place(None, sq);
                             continue 'redraw;
                         } else {
@@ -236,7 +237,7 @@ fn interactive_game() {
                         let Some(mv) = engine.moves.choose(&mut rng) else {
                             continue 'redraw;
                         };
-                        let not = Notation::new(&mv, &engine.moves);
+                        let not = Algebraic::new(&mv, &engine.moves);
                         match engine.normal_move(not) {
                             Ok(ns) => {
                                 move_log.push(ns.0);
@@ -247,12 +248,16 @@ fn interactive_game() {
                     continue 'redraw;
                 }
                 "log" => {
-                    for (n, mv) in move_log.chunks(2).enumerate() {
-                        print!("{}. ", n + 1);
-                        for m in mv {
-                            print!("{}{} ", m.0, m.1);
+                    if let Some(&"clear") = command.get(1) {
+                        move_log.clear();
+                    } else {
+                        for (n, mv) in move_log.chunks(2).enumerate() {
+                            print!("{}. ", n + 1);
+                            for m in mv {
+                                print!("{}{} ", m.0, m.1);
+                            }
+                            println!();
                         }
-                        println!();
                     }
                 }
                 "meta" => {
@@ -269,7 +274,7 @@ fn interactive_game() {
                     }
                 }
                 s => {
-                    if let Some(n) = Notation::read(s) {
+                    if let Some(n) = Algebraic::read(s) {
                         match engine.normal_move(n) {
                             Ok(ns) => {
                                 move_log.push(ns.0);

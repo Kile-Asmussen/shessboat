@@ -1,13 +1,13 @@
-pub mod algebraic;
 pub mod boardmap;
 pub mod castling;
 pub mod enums;
 pub mod half;
-pub mod hash;
 pub mod masks;
 pub mod moves;
+pub mod notation;
 pub mod pieces;
 pub mod squares;
+pub mod zobrist;
 
 use std::{collections::HashSet, hash::Hash, sync::LazyLock};
 
@@ -16,13 +16,13 @@ use crate::shessboard::{
     castling::{CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece, File, Piece, Rank},
     half::HalfBitBoard,
-    hash::BitBoardHasher,
     masks::Mask,
     pieces::{
         bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
         rooks::Rooks,
     },
     squares::Square,
+    zobrist::BitBoardHasher,
 };
 
 #[derive(Clone, Debug)]

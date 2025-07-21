@@ -10,8 +10,11 @@ use crate::shessboard::{
     squares::Square,
 };
 
+mod fen;
+mod uci;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Notation {
+pub enum Algebraic {
     Castling(CastlingSide),
     Normal(Normal),
 }
@@ -26,7 +29,7 @@ pub struct Normal {
     pub capture: bool,
 }
 
-impl Notation {
+impl Algebraic {
     pub fn new(mv: &Move, legal_moves: &[Move]) -> Self {
         match mv.castling {
             Some(pm) => {
@@ -48,16 +51,31 @@ impl Notation {
             capture: mv.capture.is_some(),
         };
 
-        if legal_moves.iter().filter(|mv| Self::Normal(res).matches(mv)).count() > 1 {
+        if legal_moves
+            .iter()
+            .filter(|mv| Self::Normal(res).matches(mv))
+            .count()
+            > 1
+        {
             res.origin_file = Some(mv.from_to.from.file());
         }
 
-        if legal_moves.iter().filter(|mv| Self::Normal(res).matches(mv)).count() > 1 {
+        if legal_moves
+            .iter()
+            .filter(|mv| Self::Normal(res).matches(mv))
+            .count()
+            > 1
+        {
             res.origin_file = None;
             res.origin_rank = Some(mv.from_to.from.rank());
         }
 
-        if legal_moves.iter().filter(|mv| Self::Normal(res).matches(mv)).count() > 1 {
+        if legal_moves
+            .iter()
+            .filter(|mv| Self::Normal(res).matches(mv))
+            .count()
+            > 1
+        {
             res.origin_file = Some(mv.from_to.from.file());
             res.origin_rank = Some(mv.from_to.from.rank());
         }
@@ -71,7 +89,7 @@ impl Notation {
 
     pub fn matches(self, mv: &Move) -> bool {
         match self {
-            Notation::Castling(castling_side) => {
+            Algebraic::Castling(castling_side) => {
                 if let Some(pm) = mv.castling {
                     if pm.positive() {
                         castling_side == CastlingSide::OO
@@ -82,7 +100,7 @@ impl Notation {
                     false
                 }
             }
-            Notation::Normal(Normal {
+            Algebraic::Normal(Normal {
                 piece,
                 origin_rank,
                 origin_file,
@@ -103,7 +121,7 @@ impl Notation {
     pub fn read(s: &str) -> Option<Self> {
         let pawn_move = Regex::new(r"\A([abcdefgh][12345678])(?:=([QRBK]))?").ok()?;
         if let Some(pawn_move) = pawn_move.captures(s) {
-            return Some(Notation::Normal(Normal {
+            return Some(Algebraic::Normal(Normal {
                 piece: Piece::Pawn,
                 origin_rank: None,
                 origin_file: None,
@@ -116,7 +134,7 @@ impl Notation {
         let pawn_capture =
             Regex::new(r"\A([abcdefgh])x([abcdefgh][12345678])(?:=([QRBK]))?").ok()?;
         if let Some(pawn_capture) = pawn_capture.captures(s) {
-            return Some(Notation::Normal(Normal {
+            return Some(Algebraic::Normal(Normal {
                 piece: Piece::Pawn,
                 origin_rank: None,
                 origin_file: Some(Self::read_file(pawn_capture.get(1)?.as_str())?),
@@ -129,7 +147,7 @@ impl Notation {
         let piece_move =
             Regex::new(r"\A([BNKQR])([abcdefgh]?)([12345678]?)([abcdefgh][12345678])").ok()?;
         if let Some(piece_move) = piece_move.captures(s) {
-            return Some(Notation::Normal(Normal {
+            return Some(Algebraic::Normal(Normal {
                 piece: Self::read_piece(piece_move.get(1)?.as_str())?,
                 origin_rank: Self::read_rank(piece_move.get(2)?.as_str()),
                 origin_file: Self::read_file(piece_move.get(3)?.as_str()),
@@ -142,7 +160,7 @@ impl Notation {
         let piece_capture =
             Regex::new(r"\A([BNKQR])([abcdefgh]?)([12345678]?)x([abcdefgh][12345678])").ok()?;
         if let Some(piece_capture) = piece_capture.captures(s) {
-            return Some(Notation::Normal(Normal {
+            return Some(Algebraic::Normal(Normal {
                 piece: Self::read_piece(piece_capture.get(1)?.as_str())?,
                 origin_rank: Self::read_rank(piece_capture.get(2)?.as_str()),
                 origin_file: Self::read_file(piece_capture.get(3)?.as_str()),
@@ -154,7 +172,7 @@ impl Notation {
 
         let castling = Regex::new(r"\A[oO0]-?[oO0]-?[oO0]|\A[oO0]-?[oO0]").ok()?;
         if let Some(castling) = castling.find(s) {
-            return Some(Notation::Castling(match castling.as_str() {
+            return Some(Algebraic::Castling(match castling.as_str() {
                 "O-O-O" => CastlingSide::OOO,
                 "O-O" => CastlingSide::OO,
                 _ => return None,
@@ -195,12 +213,12 @@ impl Notation {
     }
 }
 
-impl Display for Notation {
+impl Display for Algebraic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Notation::Castling(CastlingSide::OOO) => write!(f, "O-O-O")?,
-            Notation::Castling(CastlingSide::OO) => write!(f, "O-O")?,
-            Notation::Normal(Normal {
+            Algebraic::Castling(CastlingSide::OOO) => write!(f, "O-O-O")?,
+            Algebraic::Castling(CastlingSide::OO) => write!(f, "O-O")?,
+            Algebraic::Normal(Normal {
                 piece,
                 origin_rank,
                 origin_file,
@@ -231,10 +249,10 @@ impl Display for Notation {
     }
 }
 
-impl FromStr for Notation {
+impl FromStr for Algebraic {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Notation::read(s).ok_or(())
+        Algebraic::read(s).ok_or(())
     }
 }

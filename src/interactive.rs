@@ -1,11 +1,11 @@
 use crate::shessboard::{
     BitBoard, Metadata,
-    algebraic::Notation,
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece},
     masks::Mask,
     moves::{Move, ProtoMove},
+    notation::Algebraic,
     squares::Square,
 };
 
@@ -73,8 +73,8 @@ impl ShessInteractor {
 
     pub fn normal_move(
         &mut self,
-        n: Notation,
-    ) -> Result<((Notation, &'static str), Move), &'static str> {
+        n: Algebraic,
+    ) -> Result<((Algebraic, &'static str), Move), &'static str> {
         let v = n.find(&self.moves);
         let mv = if v.len() == 0 {
             return Err("No such legal move");

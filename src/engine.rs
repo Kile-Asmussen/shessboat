@@ -1,0 +1,3 @@
+struct ShessEngine {
+    pub hashes: 
+}

@@ -3,7 +3,7 @@ use std::{fmt::Display, fs::metadata};
 
 use crate::shessboard::{
     BitBoard, CastlingInfo,
-    algebraic::Notation,
+    notation::Algebraic,
     castling::{CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, File, Piece, Rank},
     half::HalfBitBoard,
@@ -228,7 +228,7 @@ fn en_passant_into_check() {
     let mut moves = vec![];
     board.generate_moves(&mut moves);
 
-    let not = Notation::read("dxe3").unwrap();
+    let not = Algebraic::read("dxe3").unwrap();
 
     assert_eq!(not.find(&moves), Vec::<&Move>::new());
 }

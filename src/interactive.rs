@@ -65,7 +65,7 @@ impl ShessInteractor {
             .threats(c, self.board.color(c.other()).as_mask(), None)
     }
 
-    pub fn apply_move(&mut self, m: &Move) {
+    pub fn apply_move(&mut self, m: Move) {
         self.board.apply(m);
         self.moves.clear();
         self.board.generate_moves(&mut self.moves);
@@ -84,7 +84,7 @@ impl ShessInteractor {
             v[0].clone()
         };
 
-        self.board.apply(&mv);
+        self.board.apply(mv);
         self.moves.clear();
         self.board.generate_moves(&mut self.moves);
         if self.board.is_in_check(self.to_move()) {

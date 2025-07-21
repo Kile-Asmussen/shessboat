@@ -22,8 +22,8 @@ use crate::{
         enums::{Color, ColorPiece, File, Piece, Rank, Shade},
         half::HalfBitBoard,
         masks::Mask,
-        moves::ProtoMove,
-        notation::Algebraic,
+        moves::{Move, ProtoMove},
+        notation::{self, Algebraic},
         pieces::{
             bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
             rooks::Rooks, slide_move_stop,
@@ -37,7 +37,52 @@ pub mod interactive;
 pub mod shessboard;
 
 fn main() {
-    random_games_move_enumeration_benchmark();
+    enumerate_moves_check();
+}
+
+fn enumerate_moves_check() {
+    let depth = 2;
+    println!("-- Depth {depth} checks --");
+
+    let mut start_moves = Vec::with_capacity(20);
+    let mut board = BitBoard::new();
+    let b3 = Move {
+        color_and_piece: ColorPiece::WhitePawn,
+        from_to: ProtoMove {
+            from: Square::at(File::B, Rank::_2),
+            to: Square::at(File::B, Rank::_3),
+        },
+        castling: None,
+        capture: None,
+        promotion: None,
+    };
+    board.apply(b3);
+
+    board.generate_moves(&mut start_moves);
+
+    for mv in start_moves {
+        let mut res_moves = Vec::new();
+        let mut board = board.clone();
+        board.apply(mv);
+        let now = Instant::now();
+        recurse(board, 0, &mut res_moves);
+        let millis = now.elapsed().as_nanos() as f64 / 1_000_000.0;
+        println!("{} {}: {}", b3, mv, res_moves.len());
+    }
+
+    fn recurse(board: BitBoard, depth: usize, mut res: &mut Vec<Move>) {
+        if depth == 0 {
+            board.generate_moves(&mut res);
+        } else {
+            let mut moves = Vec::with_capacity(50);
+            board.generate_moves(&mut moves);
+            for mv in moves {
+                let mut b = board.clone();
+                b.apply(mv);
+                recurse(b, depth - 1, res);
+            }
+        }
+    }
 }
 
 fn random_games_move_enumeration_benchmark() {
@@ -60,7 +105,7 @@ fn random_games_move_enumeration_benchmark() {
         {
             let mv = engine.moves.choose(&mut rng).unwrap().clone();
             let now = Instant::now();
-            engine.apply_move(&mv);
+            engine.apply_move(mv);
             let delta = now.elapsed();
             if delta > longsearch {
                 longsearch = delta;

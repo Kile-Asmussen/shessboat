@@ -32,6 +32,14 @@ pub struct BitBoard {
     pub black: HalfBitBoard,
 }
 
+#[test]
+fn bitboard_size() {
+    dbg!(
+        std::mem::size_of::<BitBoard>(),
+        std::mem::size_of::<BoardMap<Option<ColorPiece>>>()
+    );
+}
+
 impl BitBoard {
     pub fn new() -> Self {
         Self::new_960(518)
@@ -132,7 +140,6 @@ impl BitBoard {
 
 #[derive(Clone, Debug)]
 pub struct Metadata {
-    pub hash: u128,
     pub to_move: Color,
     pub half_turn: usize,
     pub change_happened_at: usize,
@@ -188,7 +195,6 @@ impl Metadata {
         }
 
         Self {
-            hash: 0,
             to_move: Color::White,
             half_turn: 0,
             change_happened_at: 0,
@@ -201,7 +207,6 @@ impl Metadata {
 
     fn empty() -> Metadata {
         Self {
-            hash: 0,
             to_move: Color::White,
             half_turn: 0,
             change_happened_at: 0,

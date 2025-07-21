@@ -83,8 +83,10 @@ impl Algebraic {
         Self::Normal(res)
     }
 
-    pub fn find(self, mv: &[Move]) -> Vec<&Move> {
-        mv.iter().filter(|m| self.matches(m)).collect::<Vec<_>>()
+    pub fn find(self, mv: &[Move]) -> Vec<Move> {
+        mv.into_iter()
+            .filter_map(|m| if self.matches(m) { Some(*m) } else { None })
+            .collect::<Vec<_>>()
     }
 
     pub fn matches(self, mv: &Move) -> bool {

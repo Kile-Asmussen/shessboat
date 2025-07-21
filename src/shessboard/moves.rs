@@ -3,11 +3,11 @@ use std::{fmt::Display, fs::metadata};
 
 use crate::shessboard::{
     BitBoard, CastlingInfo,
-    notation::Algebraic,
     castling::{CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, File, Piece, Rank},
     half::HalfBitBoard,
     masks::Mask,
+    notation::Algebraic,
     pieces::{
         kings::Kings,
         knights::{self, Knights},
@@ -230,7 +230,7 @@ fn en_passant_into_check() {
 
     let not = Algebraic::read("dxe3").unwrap();
 
-    assert_eq!(not.find(&moves), Vec::<&Move>::new());
+    assert_eq!(not.find(&moves), vec![]);
 }
 
 impl Display for ProtoMove {
@@ -271,6 +271,49 @@ impl Move {
             return None;
         }
     }
+
+    pub fn castling_rights(
+        &self,
+        rook_files: CastlingInfo<File>,
+    ) -> (CastlingRights, CastlingRights) {
+        let (color, piece) = self.color_and_piece.split();
+
+        let mut active = CastlingRights {
+            ooo: true,
+            oo: true,
+        };
+        let mut passive = CastlingRights {
+            ooo: true,
+            oo: true,
+        };
+
+        if piece == Piece::King {
+            active.ooo = false;
+            active.oo = false;
+        } else if piece == Piece::Rook {
+            if self.from_to.from == Square::at(rook_files.ooo, color.starting_rank()) {
+                active.ooo = false;
+            }
+
+            if self.from_to.from == Square::at(rook_files.oo, color.starting_rank()) {
+                active.oo = false;
+            }
+        }
+
+        if let Some((sq, Piece::Rook)) = self.capture {
+            if piece == Piece::Rook {
+                if sq == Square::at(rook_files.ooo, color.other().starting_rank()) {
+                    passive.ooo = false;
+                }
+
+                if sq == Square::at(rook_files.oo, color.other().starting_rank()) {
+                    passive.oo = false;
+                }
+            }
+        }
+
+        (active, passive)
+    }
 }
 
 impl Display for Move {
@@ -301,8 +344,11 @@ impl Display for Move {
 
 #[test]
 fn size_fuckery() {
-    assert!(std::mem::size_of::<Move>() <= 8);
-    assert!(std::mem::size_of::<Option<Move>>() == std::mem::size_of::<Move>());
+    assert_eq!(std::mem::size_of::<Move>(), std::mem::size_of::<u64>());
+    assert_eq!(
+        std::mem::size_of::<Option<Move>>(),
+        std::mem::size_of::<Move>()
+    );
     assert_eq!(std::mem::align_of::<Move>(), 8);
 }
 
@@ -339,7 +385,7 @@ impl BitBoard {
         return true;
     }
 
-    pub fn apply(&mut self, mv: &Move) {
+    pub fn apply(&mut self, mv: Move) {
         let (color, piece) = mv.color_and_piece.split();
 
         // update metadata
@@ -351,36 +397,12 @@ impl BitBoard {
         self.metadata.en_passant = mv.en_passant_square();
 
         // calculate changes to castling rights
-        let rook_files = self.metadata.rook_files;
+        let (cr_active, cr_passive) = mv.castling_rights(self.metadata.rook_files);
 
         let (active_castling, passive_castling) = self.metadata.castling_right_mut(color);
 
-        if piece == Piece::King {
-            active_castling.ooo = false;
-            active_castling.oo = false;
-        }
-
-        if piece == Piece::Rook {
-            if mv.from_to.from == Square::at(rook_files.ooo, color.starting_rank()) {
-                active_castling.ooo = false;
-            }
-
-            if mv.from_to.from == Square::at(rook_files.oo, color.starting_rank()) {
-                active_castling.oo = false;
-            }
-        }
-
-        if let Some((sq, Piece::Rook)) = mv.capture {
-            if piece == Piece::Rook {
-                if sq == Square::at(rook_files.ooo, color.other().starting_rank()) {
-                    passive_castling.ooo = false;
-                }
-
-                if sq == Square::at(rook_files.oo, color.other().starting_rank()) {
-                    passive_castling.oo = false;
-                }
-            }
-        }
+        active_castling.update(cr_active);
+        passive_castling.update(cr_passive);
 
         // calculate changes to board
         let (active, passive) = self.color_mut(color);

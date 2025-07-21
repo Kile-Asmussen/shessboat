@@ -1,7 +1,10 @@
 use std::{
     backtrace,
     collections::{HashMap, btree_map::Values},
-    io::{BufReader, Read, Write},
+    error::{self, Error},
+    fmt::Display,
+    io::{self, BufReader, Read, Write},
+    mem::size_of,
     path::Path,
 };
 
@@ -19,41 +22,58 @@ use crate::shessboard::{
     squares::Square,
 };
 
-pub type PositionHasher = HashMap<HashResult, Micropawns>;
+pub type PositionHashes = HashMap<HashResult, (u64, Micropawns)>;
 
-fn save_position_hashes(ph: &PositionHasher, f: &Path) -> std::io::Result<()> {
+fn save_position_hashes(ph: &PositionHashes, f: &Path) -> Result<(), Box<dyn Error>> {
     let mut file = std::io::BufWriter::new(std::fs::File::create(f)?);
     for (k, v) in ph {
-        file.write(&k.to_le_bytes());
-        file.write(&v.to_le_bytes());
+        file.write(&k.to_le_bytes())?;
+        file.write(&v.0.to_le_bytes())?;
+        file.write(&v.1.to_le_bytes())?;
     }
     Ok(())
 }
 
-fn recover_position_hashes(f: &Path) -> std::io::Result<PositionHasher> {
+fn recover_position_hashes(f: &Path) -> Result<PositionHashes, Box<dyn Error>> {
     let file = std::fs::File::open(f)?;
     let filesize = file.metadata()?.len();
     let positions = filesize
-        / (std::mem::size_of::<HashResult>() as u64 + std::mem::size_of::<Micropawns>() as u64);
-    let mut result = PositionHasher::with_capacity(positions as usize);
+        / (size_of::<HashResult>() as u64
+            + size_of::<Micropawns>() as u64
+            + size_of::<u64>() as u64);
+    let mut result = PositionHashes::with_capacity(positions as usize);
     let mut file = BufReader::new(file);
 
-    let mut position_buf = [0u8; 16];
-    let mut value_buf = [0u8; 8];
+    let mut position_buf = [0u8; size_of::<HashResult>()];
+    let mut weight_buf = [0u8; size_of::<u64>()];
+    let mut depth_buf = [0u8; size_of::<Micropawns>()];
 
     loop {
-        if file.read(&mut position_buf)? != 16 {
-            break;
+        if file.read(&mut position_buf)? != size_of::<HashResult>() {
+            return Err(Box::new(ReadHashesError));
         }
-        if file.read(&mut value_buf)? != 8 {
-            break;
+        if file.read(&mut depth_buf)? != size_of::<u64>() {
+            return Err(Box::new(ReadHashesError));
+        }
+        if file.read(&mut weight_buf)? != size_of::<Micropawns>() {
+            return Err(Box::new(ReadHashesError));
         }
         let position = HashResult::from_le_bytes(position_buf);
-        let value = Micropawns::from_le_bytes(value_buf);
-        result.insert(position, value);
+        let depth = u64::from_le_bytes(depth_buf);
+        let weight = Micropawns::from_le_bytes(weight_buf);
+        result.insert(position, (depth, weight));
     }
 
-    Ok(HashMap::new())
+    Ok(result)
+}
+
+#[derive(Debug, Default)]
+struct ReadHashesError;
+impl Error for ReadHashesError {}
+impl Display for ReadHashesError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Error reading hash file")
+    }
 }
 
 pub type MaskHasher = BoardMap<HashResult>;
@@ -122,14 +142,6 @@ impl BitBoardHasher {
 
         let mut res = same.hash_piece(mv.color_and_piece.piece(), mv.from_to.from)
             ^ same.hash_piece(mv.color_and_piece.piece(), mv.from_to.to);
-
-        if let Some(pm) = mv.castling {
-            if pm.positive() {
-                res ^= same.castling.oo
-            } else {
-                res ^= same.castling.ooo
-            }
-        }
 
         res
     }

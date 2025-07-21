@@ -24,8 +24,10 @@ impl CastlingRights {
             oo: true,
         }
     }
-    pub fn any(&self) -> bool {
-        self.ooo || self.oo
+
+    pub fn update(&mut self, cr: CastlingRights) {
+        self.ooo &= cr.ooo;
+        self.oo &= cr.oo;
     }
 }
 

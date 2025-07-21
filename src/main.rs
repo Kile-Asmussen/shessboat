@@ -15,7 +15,7 @@ use rand::{
 };
 
 use crate::{
-    engine::ShessEngine,
+    interactive::ShessInteractor,
     shessboard::{
         BitBoard, Metadata,
         algebraic::Notation,
@@ -32,7 +32,7 @@ use crate::{
     },
 };
 
-pub mod engine;
+pub mod interactive;
 pub mod shessboard;
 
 fn main() {
@@ -42,7 +42,7 @@ fn main() {
 fn random_games_move_enumeration_benchmark() {
     let n = 10_000;
     let mut rng = ThreadRng::default();
-    let mut engine = ShessEngine::new();
+    let mut engine = ShessInteractor::new();
     let mut longboard = BoardMap::<Option<ColorPiece>>::new_with(None);
     let mut longcolor = Color::White;
     let mut longsearch = Duration::ZERO;
@@ -99,7 +99,7 @@ fn random_games_move_enumeration_benchmark() {
 
 fn interactive_game() {
     let mut rng = ThreadRng::default();
-    let mut engine = ShessEngine::new();
+    let mut engine = ShessInteractor::new();
     engine.set_position(518);
     let mut move_log = Vec::<(Notation, &'static str)>::new();
     let mut highlight = Mask::nil();

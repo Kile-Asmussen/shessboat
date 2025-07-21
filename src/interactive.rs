@@ -9,12 +9,12 @@ use crate::shessboard::{
     squares::Square,
 };
 
-pub struct ShessEngine {
+pub struct ShessInteractor {
     pub board: BitBoard,
     pub moves: Vec<Move>,
 }
 
-impl ShessEngine {
+impl ShessInteractor {
     pub fn new() -> Self {
         Self {
             board: BitBoard::empty(),

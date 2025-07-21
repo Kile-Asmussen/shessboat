@@ -37,37 +37,22 @@ pub mod interactive;
 pub mod shessboard;
 
 fn main() {
-    enumerate_moves_check();
+    enumerate_moves_check(2);
 }
 
-fn enumerate_moves_check() {
-    let depth = 2;
-    println!("-- Depth {depth} checks --");
+fn enumerate_moves_check(depth: usize) {
+    println!("-- Depth checks {depth} --");
 
-    let mut start_moves = Vec::with_capacity(20);
-    let mut board = BitBoard::new();
-    let b3 = Move {
-        color_and_piece: ColorPiece::WhitePawn,
-        from_to: ProtoMove {
-            from: Square::at(File::B, Rank::_2),
-            to: Square::at(File::B, Rank::_3),
-        },
-        castling: None,
-        capture: None,
-        promotion: None,
-    };
-    board.apply(b3);
+    let board = BitBoard::new();
+    let mut firsts = vec![];
+    board.generate_moves(&mut firsts);
 
-    board.generate_moves(&mut start_moves);
-
-    for mv in start_moves {
-        let mut res_moves = Vec::new();
+    for mv in firsts {
         let mut board = board.clone();
         board.apply(mv);
-        let now = Instant::now();
-        recurse(board, 0, &mut res_moves);
-        let millis = now.elapsed().as_nanos() as f64 / 1_000_000.0;
-        println!("{} {}: {}", b3, mv, res_moves.len());
+        let mut res = vec![];
+        recurse(board, depth - 1, &mut res);
+        println!("{}: {}", mv.from_to, res.len());
     }
 
     fn recurse(board: BitBoard, depth: usize, mut res: &mut Vec<Move>) {

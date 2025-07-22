@@ -6,6 +6,7 @@ use std::{
 use crate::shessboard::{
     enums::{Dir, File, Rank},
     masks::Mask,
+    moves::ProtoMove,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -146,4 +147,86 @@ fn moves() {
         Some(at(B, _7)),
         "southeast from a8 is b7"
     )
+}
+
+#[allow(non_upper_case_globals)]
+impl Square {
+    pub const a1: Square = Square::at(File::A, Rank::_1);
+    pub const b1: Square = Square::at(File::B, Rank::_1);
+    pub const c1: Square = Square::at(File::C, Rank::_1);
+    pub const d1: Square = Square::at(File::D, Rank::_1);
+    pub const e1: Square = Square::at(File::E, Rank::_1);
+    pub const f1: Square = Square::at(File::F, Rank::_1);
+    pub const g1: Square = Square::at(File::G, Rank::_1);
+    pub const h1: Square = Square::at(File::H, Rank::_1);
+
+    pub const a2: Square = Square::at(File::A, Rank::_2);
+    pub const b2: Square = Square::at(File::B, Rank::_2);
+    pub const c2: Square = Square::at(File::C, Rank::_2);
+    pub const d2: Square = Square::at(File::D, Rank::_2);
+    pub const e2: Square = Square::at(File::E, Rank::_2);
+    pub const f2: Square = Square::at(File::F, Rank::_2);
+    pub const g2: Square = Square::at(File::G, Rank::_2);
+    pub const h2: Square = Square::at(File::H, Rank::_2);
+
+    pub const a3: Square = Square::at(File::A, Rank::_3);
+    pub const b3: Square = Square::at(File::B, Rank::_3);
+    pub const c3: Square = Square::at(File::C, Rank::_3);
+    pub const d3: Square = Square::at(File::D, Rank::_3);
+    pub const e3: Square = Square::at(File::E, Rank::_3);
+    pub const f3: Square = Square::at(File::F, Rank::_3);
+    pub const g3: Square = Square::at(File::G, Rank::_3);
+    pub const h3: Square = Square::at(File::H, Rank::_3);
+
+    pub const a4: Square = Square::at(File::A, Rank::_4);
+    pub const b4: Square = Square::at(File::B, Rank::_4);
+    pub const c4: Square = Square::at(File::C, Rank::_4);
+    pub const d4: Square = Square::at(File::D, Rank::_4);
+    pub const e4: Square = Square::at(File::E, Rank::_4);
+    pub const f4: Square = Square::at(File::F, Rank::_4);
+    pub const g4: Square = Square::at(File::G, Rank::_4);
+    pub const h4: Square = Square::at(File::H, Rank::_4);
+
+    pub const a5: Square = Square::at(File::A, Rank::_5);
+    pub const b5: Square = Square::at(File::B, Rank::_5);
+    pub const c5: Square = Square::at(File::C, Rank::_5);
+    pub const d5: Square = Square::at(File::D, Rank::_5);
+    pub const e5: Square = Square::at(File::E, Rank::_5);
+    pub const f5: Square = Square::at(File::F, Rank::_5);
+    pub const g5: Square = Square::at(File::G, Rank::_5);
+    pub const h5: Square = Square::at(File::H, Rank::_5);
+
+    pub const a6: Square = Square::at(File::A, Rank::_6);
+    pub const b6: Square = Square::at(File::B, Rank::_6);
+    pub const c6: Square = Square::at(File::C, Rank::_6);
+    pub const d6: Square = Square::at(File::D, Rank::_6);
+    pub const e6: Square = Square::at(File::E, Rank::_6);
+    pub const f6: Square = Square::at(File::F, Rank::_6);
+    pub const g6: Square = Square::at(File::G, Rank::_6);
+    pub const h6: Square = Square::at(File::H, Rank::_6);
+
+    pub const a7: Square = Square::at(File::A, Rank::_7);
+    pub const b7: Square = Square::at(File::B, Rank::_7);
+    pub const c7: Square = Square::at(File::C, Rank::_7);
+    pub const d7: Square = Square::at(File::D, Rank::_7);
+    pub const e7: Square = Square::at(File::E, Rank::_7);
+    pub const f7: Square = Square::at(File::F, Rank::_7);
+    pub const g7: Square = Square::at(File::G, Rank::_7);
+    pub const h7: Square = Square::at(File::H, Rank::_7);
+
+    pub const a8: Square = Square::at(File::A, Rank::_8);
+    pub const b8: Square = Square::at(File::B, Rank::_8);
+    pub const c8: Square = Square::at(File::C, Rank::_8);
+    pub const d8: Square = Square::at(File::D, Rank::_8);
+    pub const e8: Square = Square::at(File::E, Rank::_8);
+    pub const f8: Square = Square::at(File::F, Rank::_8);
+    pub const g8: Square = Square::at(File::G, Rank::_8);
+    pub const h8: Square = Square::at(File::H, Rank::_8);
+
+    pub const fn to(self, other: Square) -> ProtoMove {
+        ProtoMove {
+            from: self,
+            to: other,
+        }
+    }
 }

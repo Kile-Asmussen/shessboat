@@ -4,7 +4,7 @@ use crate::shessboard::{
     half::HalfBitBoard,
     masks::Mask,
     moves::{Move, ProtoMove},
-    pieces::{Micropawns, kings::Kings, queens::Queens},
+    pieces::{Micropawns, kings::Kings, queens::Queens, slide_move_stop},
     squares::Square,
 };
 
@@ -130,7 +130,12 @@ impl Pawns {
         };
 
         for from in self.as_mask() {
-            let possible_moves = MOVES.at(from) & !active_mask;
+            let possible_moves = slide_move_stop(
+                color == Color::White,
+                MOVES.at(from),
+                active_mask | passive_mask,
+                Mask::nil(),
+            );
 
             for to in possible_moves {
                 let from_to = ProtoMove { from, to };

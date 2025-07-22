@@ -37,6 +37,10 @@ impl Mask {
         Mask::new(self.as_u64().swap_bytes())
     }
 
+    pub const fn rotate(&self) -> Self {
+        Mask::new(self.as_u64().reverse_bits())
+    }
+
     pub const fn overlap(&self, other: Mask) -> Mask {
         Mask::new(self.as_u64() & other.as_u64())
     }

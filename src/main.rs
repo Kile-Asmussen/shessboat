@@ -37,35 +37,30 @@ pub mod interactive;
 pub mod shessboard;
 
 fn main() {
-    enumerate_moves_check(2);
+    interactive_game();
 }
 
-fn enumerate_moves_check(depth: usize) {
-    println!("-- Depth checks {depth} --");
+fn enumerate_moves_check(mut depth: usize) {
+    println!("-- Depth checks to depth {depth} --");
 
-    let board = BitBoard::new();
-    let mut firsts = vec![];
-    board.generate_moves(&mut firsts);
-
-    for mv in firsts {
-        let mut board = board.clone();
-        board.apply(mv);
-        let mut res = vec![];
-        recurse(board, depth - 1, &mut res);
-        println!("{}: {}", mv.from_to, res.len());
+    for i in 1..=depth {
+        println!("Depth {i}: {}", recurse(BitBoard::new(), i));
     }
 
-    fn recurse(board: BitBoard, depth: usize, mut res: &mut Vec<Move>) {
-        if depth == 0 {
-            board.generate_moves(&mut res);
-        } else {
-            let mut moves = Vec::with_capacity(50);
+    fn recurse(board: BitBoard, depth: usize) -> usize {
+        let mut moves = Vec::with_capacity(50);
+        if depth <= 1 {
             board.generate_moves(&mut moves);
+            return moves.len();
+        } else {
+            board.generate_moves(&mut moves);
+            let mut sum = 0;
             for mv in moves {
                 let mut b = board.clone();
                 b.apply(mv);
-                recurse(b, depth - 1, res);
+                sum += recurse(b, depth - 1);
             }
+            return sum;
         }
     }
 }

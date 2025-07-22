@@ -94,9 +94,9 @@ impl Algebraic {
             Algebraic::Castling(castling_side) => {
                 if let Some(pm) = mv.castling {
                     if pm.positive() {
-                        castling_side == CastlingSide::OO
-                    } else {
                         castling_side == CastlingSide::OOO
+                    } else {
+                        castling_side == CastlingSide::OO
                     }
                 } else {
                     false
@@ -172,13 +172,13 @@ impl Algebraic {
             }));
         }
 
-        let castling = Regex::new(r"\A[oO0]-?[oO0]-?[oO0]|\A[oO0]-?[oO0]").ok()?;
-        if let Some(castling) = castling.find(s) {
-            return Some(Algebraic::Castling(match castling.as_str() {
-                "O-O-O" => CastlingSide::OOO,
-                "O-O" => CastlingSide::OO,
-                _ => return None,
-            }));
+        let castling = Regex::new(r"\A([oO0]-?[oO0]-?[oO0])|\A([oO0]-?[oO0])").ok()?;
+        if let Some(castling) = castling.captures(s) {
+            if let Some(_) = castling.get(1) {
+                return Some(Algebraic::Castling(CastlingSide::OOO));
+            } else if let Some(_) = castling.get(2) {
+                return Some(Algebraic::Castling(CastlingSide::OO));
+            }
         }
 
         return None;

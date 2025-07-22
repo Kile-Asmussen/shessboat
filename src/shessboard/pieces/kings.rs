@@ -167,6 +167,7 @@ impl Kings {
             }
         }
 
+        // TODO: Fix castling queenside
         fn castling_move(
             color: Color,
             from: Square,

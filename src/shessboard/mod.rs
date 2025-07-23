@@ -19,9 +19,10 @@ use crate::shessboard::{
     half::HalfBitBoard,
     masks::Mask,
     metadata::Metadata,
+    moves::Move,
     pieces::{
-        bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
-        rooks::Rooks,
+        Micropawns, bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns,
+        queens::Queens, rooks::Rooks,
     },
     squares::Square,
     zobrist::BitBoardHasher,
@@ -44,7 +45,11 @@ fn bitboard_size() {
 
 impl BitBoard {
     pub fn new() -> Self {
-        Self::new_960(518)
+        use Piece::*;
+        Self::new_starting_array(
+            [Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook],
+            Metadata::new(),
+        )
     }
 
     pub fn empty() -> Self {
@@ -141,7 +146,52 @@ impl BitBoard {
         .any()
     }
 
-    pub fn only_kings(&self) -> bool {
-        self.white.only_king() && self.black.only_king()
+    pub fn sufficient_checkmating_materiel(&self) -> bool {
+        self.white.has_sufficient_materiel() || self.black.has_sufficient_materiel()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum Victory {
+    White = 1,
+    Black = 2,
+    Draw = 3,
+}
+
+impl Victory {
+    pub const fn value(&self) -> Micropawns {
+        match self {
+            Victory::White => 1_000_000_000_000_000,
+            Victory::Black => -1_000_000_000_000_000,
+            Victory::Draw => 0,
+        }
+    }
+
+    pub const fn from_color(c: Color) -> Self {
+        match c {
+            Color::White => Self::White,
+            Color::Black => Self::Black,
+        }
+    }
+
+    pub const fn to_str(&self) -> &'static str {
+        match self {
+            Self::White => "0–1",
+            Self::Black => "1–0",
+            Self::Draw => "½–½",
+        }
+    }
+
+    pub fn determine(board: &BitBoard, moves: &[Move]) -> Option<Self> {
+        if board.metadata.tempo - board.metadata.last_change >= 150 {
+            Some(Self::Draw)
+        } else if board.is_in_check(board.metadata.to_move) && moves.len() == 0 {
+            Some(Self::from_color(board.metadata.to_move.other()))
+        } else if board.sufficient_checkmating_materiel() {
+            None
+        } else {
+            Some(Self::Draw)
+        }
     }
 }

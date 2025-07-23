@@ -7,8 +7,8 @@ use crate::shessboard::{
 #[derive(Clone, Debug)]
 pub struct Metadata {
     pub to_move: Color,
-    pub half_turn: u16,
-    pub change_happened_at: u16,
+    pub tempo: u16,
+    pub last_change: u16,
     pub white_castling: CastlingRights,
     pub black_castling: CastlingRights,
     pub castling_details: CastlingDetails,
@@ -34,18 +34,14 @@ impl Metadata {
     }
 
     pub fn turn(&self) -> usize {
-        (self.half_turn / 2 + 1) as usize
-    }
-
-    pub fn turn_clock(&self) -> usize {
-        (self.half_turn - self.change_happened_at) as usize / 2 + 1
+        (self.tempo / 2 + 1) as usize
     }
 
     pub fn new() -> Self {
         Self {
             to_move: Color::White,
-            half_turn: 0,
-            change_happened_at: 0,
+            tempo: 0,
+            last_change: 0,
             white_castling: CastlingRights::new(),
             black_castling: CastlingRights::new(),
             castling_details: CastlingDetails::new(),
@@ -56,8 +52,8 @@ impl Metadata {
     pub fn new_480(arr: [Piece; 8]) -> Self {
         Self {
             to_move: Color::White,
-            half_turn: 0,
-            change_happened_at: 0,
+            tempo: 0,
+            last_change: 0,
             white_castling: CastlingRights::new(),
             black_castling: CastlingRights::new(),
             castling_details: CastlingDetails::new_480(arr),
@@ -68,8 +64,8 @@ impl Metadata {
     pub fn new_960(arr: [Piece; 8]) -> Self {
         Self {
             to_move: Color::White,
-            half_turn: 0,
-            change_happened_at: 0,
+            tempo: 0,
+            last_change: 0,
             white_castling: CastlingRights::new(),
             black_castling: CastlingRights::new(),
             castling_details: CastlingDetails::new_960(arr),
@@ -80,8 +76,8 @@ impl Metadata {
     pub fn empty() -> Metadata {
         Self {
             to_move: Color::White,
-            half_turn: 0,
-            change_happened_at: 0,
+            tempo: 0,
+            last_change: 0,
             white_castling: CastlingRights {
                 ooo: false,
                 oo: false,

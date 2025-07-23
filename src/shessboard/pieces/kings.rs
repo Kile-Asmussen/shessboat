@@ -24,10 +24,6 @@ impl Kings {
         Self(mask)
     }
 
-    pub const fn materiel(&self) -> Micropawns {
-        self.as_mask().occupied() as i64 * 1_000_000_000
-    }
-
     pub const fn as_mask(&self) -> Mask {
         self.0
     }

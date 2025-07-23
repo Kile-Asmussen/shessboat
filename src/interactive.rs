@@ -1,5 +1,5 @@
 use crate::shessboard::{
-    BitBoard,
+    BitBoard, Victory,
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece},
@@ -27,11 +27,17 @@ impl ShessInteractor {
         self.board.metadata.to_move
     }
 
-    pub fn set_position(&mut self, n: usize) {
-        self.board = BitBoard::new_960(n);
+    pub fn setup(&mut self) {
+        self.board = BitBoard::new();
         self.moves.clear();
         self.board.generate_moves(&mut self.moves);
     }
+
+    // pub fn set_position(&mut self, n: usize) {
+    //     self.board = BitBoard::new_960(n);
+    //     self.moves.clear();
+    //     self.board.generate_moves(&mut self.moves);
+    // }
 
     pub fn reset(&mut self) {
         self.board = BitBoard::empty();
@@ -101,9 +107,8 @@ impl ShessInteractor {
 
     pub fn set_turn(&mut self, c: Color, n: usize) {
         self.board.metadata.to_move = c;
-        self.board.metadata.half_turn =
-            ((n - 1) * 2 + if c == Color::Black { 1 } else { 0 }) as u16;
-        self.board.metadata.change_happened_at = self.board.metadata.half_turn;
+        self.board.metadata.tempo = ((n - 1) * 2 + if c == Color::Black { 1 } else { 0 }) as u16;
+        self.board.metadata.last_change = self.board.metadata.tempo;
     }
 
     pub fn printable_metadata(&self) -> String {
@@ -116,7 +121,7 @@ impl ShessInteractor {
             .map(|x| format!("{}", x.to))
             .unwrap_or("n/a".to_string());
         let turn = metadata.turn();
-        let clock = metadata.turn_clock();
+        let clock = metadata.tempo - metadata.last_change;
         let (wooo, woo) = castles(metadata.white_castling);
         let (booo, boo) = castles(metadata.black_castling);
 
@@ -133,6 +138,10 @@ En passant square: {epc}",
                 if r.oo { "O-O" } else { "-" },
             )
         }
+    }
+
+    pub fn victory(&self) -> Option<Victory> {
+        Victory::determine(&self.board, &self.moves)
     }
 
     pub fn printable_moves(&self) -> Vec<String> {

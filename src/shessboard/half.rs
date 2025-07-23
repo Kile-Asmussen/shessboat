@@ -1,10 +1,14 @@
 use crate::shessboard::{
     boardmap::BoardMap,
-    enums::{Color, ColorPiece, Dir, Piece},
+    enums::{Color, ColorPiece, Dir, Piece, Shade},
     masks::Mask,
     pieces::{
-        bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
-        rooks::Rooks,
+        bishops::{self, Bishops},
+        kings::Kings,
+        knights::Knights,
+        pawns::Pawns,
+        queens::{self, Queens},
+        rooks::{self, Rooks},
     },
     squares::Square,
 };
@@ -154,12 +158,27 @@ impl HalfBitBoard {
         }
     }
 
-    pub fn only_king(&self) -> bool {
-        self.kings.as_mask().any()
-            && self.queens == Queens::nil()
-            && self.rooks == Rooks::nil()
-            && self.bishops == Bishops::nil()
-            && self.knights == Knights::nil()
-            && self.pawns == Pawns::nil()
+    pub fn has_sufficient_materiel(&self) -> bool {
+        let pawns = self.pawns.as_mask().occupied();
+        let rooks = self.rooks.as_mask().occupied();
+        let queens = self.queens.as_mask().occupied();
+        let dark_bishops = self
+            .bishops
+            .as_mask()
+            .overlap(Shade::Dark.as_mask())
+            .occupied();
+        let light_bishops = self
+            .bishops
+            .as_mask()
+            .overlap(Shade::Light.as_mask())
+            .occupied();
+        let knights = self.knights.as_mask().occupied();
+
+        pawns > 0
+            || rooks > 0
+            || queens > 0
+            || (light_bishops > 0 && dark_bishops > 0)
+            || (knights >= 2)
+            || (knights == 1 && (light_bishops + dark_bishops) == 1)
     }
 }

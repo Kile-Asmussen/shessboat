@@ -65,8 +65,8 @@ impl Mask {
         self.0 != 0
     }
 
-    pub const fn occupied(&self) -> usize {
-        self.0.count_ones() as usize
+    pub const fn occupied(&self) -> u32 {
+        self.0.count_ones()
     }
 
     pub const fn set(mut self, sq: Square) -> Self {
@@ -223,7 +223,7 @@ impl Iterator for SquareIter {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.0.occupied(), Some(self.0.occupied()))
+        (self.0.occupied() as usize, Some(self.0.occupied() as usize))
     }
 }
 

@@ -17,7 +17,7 @@ use rand::{
 use crate::{
     interactive::ShessInteractor,
     shessboard::{
-        BitBoard,
+        BitBoard, Victory,
         boardmap::{BoardMap, BoardMapIter},
         enums::{Color, ColorPiece, File, Piece, Rank, Shade},
         half::HalfBitBoard,
@@ -38,7 +38,7 @@ pub mod interactive;
 pub mod shessboard;
 
 fn main() {
-    random_games_move_enumeration_benchmark(10_000);
+    interactive_game();
 }
 
 fn enumerate_moves_check(mut depth: usize) {
@@ -77,12 +77,9 @@ fn random_games_move_enumeration_benchmark(n: usize) {
     println!("\n  Running {n} random games...\n");
 
     for _ in 1..=n {
-        engine.set_position(rng.random_range(1..=960));
+        engine.setup();
 
-        while engine.moves.len() > 0
-            && !engine.board.only_kings()
-            && engine.board.metadata.turn() < 1000
-        {
+        while engine.victory() == None {
             let mv = engine.moves.choose(&mut rng).unwrap().clone();
             let now = Instant::now();
             engine.apply_move(mv);
@@ -126,7 +123,7 @@ fn random_games_move_enumeration_benchmark(n: usize) {
 fn interactive_game() {
     let mut rng = ThreadRng::default();
     let mut engine = ShessInteractor::new();
-    engine.set_position(518);
+    engine.setup();
     let mut move_log = Vec::<(Algebraic, &'static str)>::new();
     let mut highlight = Mask::nil();
 
@@ -136,16 +133,8 @@ fn interactive_game() {
         print_chessboard(&engine.as_boardmap(), highlight);
         'command_loop: loop {
             let mut s = String::new();
-            if engine.moves.len() == 0 || engine.board.only_kings() {
-                let res = if engine.board.is_in_check(engine.to_move()) {
-                    match engine.to_move() {
-                        Color::White => "0–1",
-                        Color::Black => "1–0",
-                    }
-                } else {
-                    "½–½"
-                };
-                print!("{}> ", res);
+            if let Some(vic) = engine.victory() {
+                print!("{}> ", vic.to_str());
             } else {
                 print!("{:?}> ", engine.to_move());
             }
@@ -156,7 +145,7 @@ fn interactive_game() {
                 .split(|c: char| c.is_whitespace())
                 .collect::<Vec<_>>();
             if command.len() < 1 {
-                continue;
+                continue 'command_loop;
             }
             match command[0] {
                 "exit" => {
@@ -165,23 +154,11 @@ fn interactive_game() {
                 "clear" => {
                     continue 'redraw;
                 }
-                "pos" => {
-                    if let Some(n) = command.get(1) {
-                        if let Ok(n) = n.parse() {
-                            engine.set_position(n);
-                            move_log.clear();
-                            highlight = Mask::nil();
-                            continue 'redraw;
-                        } else {
-                            println!("Invalid number");
-                            continue 'command_loop;
-                        }
-                    } else {
-                        engine.set_position(518);
-                        move_log.clear();
-                        highlight = Mask::nil();
-                        continue 'redraw;
-                    }
+                "new" => {
+                    highlight = Mask::nil();
+                    engine.setup();
+                    move_log.clear();
+                    continue 'redraw;
                 }
                 "reset" => {
                     highlight = Mask::nil();
@@ -235,9 +212,11 @@ fn interactive_game() {
                 }
                 "w" => {
                     engine.set_turn(Color::White, engine.board.metadata.turn());
+                    continue 'command_loop;
                 }
                 "b" => {
                     engine.set_turn(Color::Black, engine.board.metadata.turn());
+                    continue 'command_loop;
                 }
                 "ls" => {
                     let legal_moves = engine.printable_moves();
@@ -284,6 +263,11 @@ fn interactive_game() {
                             println!();
                         }
                     }
+                    continue 'command_loop;
+                }
+                "clear" => {
+                    move_log.clear();
+                    continue 'command_loop;
                 }
                 "meta" => {
                     println!("{}", engine.printable_metadata());
@@ -297,6 +281,7 @@ fn interactive_game() {
                         engine.board.metadata.black_castling.ooo = command.contains(&"ooo");
                         engine.board.metadata.black_castling.oo = command.contains(&"oo");
                     }
+                    continue 'command_loop;
                 }
                 s => {
                     if let Some(n) = Algebraic::read(s) {

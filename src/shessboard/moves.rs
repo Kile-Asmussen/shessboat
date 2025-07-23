@@ -396,9 +396,9 @@ impl BitBoard {
         // update metadata
         self.metadata.to_move = color.other();
         if piece == Piece::Pawn || mv.capture.is_some() {
-            self.metadata.change_happened_at = self.metadata.half_turn;
+            self.metadata.last_change = self.metadata.tempo;
         }
-        self.metadata.half_turn += 1;
+        self.metadata.tempo += 1;
         self.metadata.en_passant = mv.en_passant_square();
 
         // calculate changes to castling rights

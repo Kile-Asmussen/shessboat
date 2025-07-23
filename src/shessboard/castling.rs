@@ -1,3 +1,5 @@
+use rand::distr::weighted;
+
 use crate::shessboard::{
     enums::{File, Piece},
     moves::ProtoMove,
@@ -42,15 +44,54 @@ impl CastlingRights {
     }
 }
 
-pub type CastlingMasks = CastlingInfo<CastlingMask>;
+pub type CastlingDetails = CastlingInfo<CastlingDetail>;
 
-#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
-pub struct CastlingMask {
-    rook: u8,
-    king: u8,
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct CastlingDetail {
+    pub rook_mask: u8,
+    pub king_mask: u8,
+    pub rook_move: SemiProtoMove,
+    pub king_move: SemiProtoMove,
 }
 
-impl CastlingMasks {
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct SemiProtoMove {
+    pub from: File,
+    pub to: File,
+}
+
+impl CastlingDetails {
+    pub fn new() -> Self {
+        Self {
+            ooo: CastlingDetail {
+                rook_mask: 0b_00001110,
+                //            hgfedcba
+                king_mask: 0b_00001100,
+                rook_move: SemiProtoMove {
+                    from: File::A,
+                    to: File::D,
+                },
+                king_move: SemiProtoMove {
+                    from: File::E,
+                    to: File::C,
+                },
+            },
+            oo: CastlingDetail {
+                rook_mask: 0b_01100000,
+                //            hgfedcba
+                king_mask: 0b_01100000,
+                rook_move: SemiProtoMove {
+                    from: File::H,
+                    to: File::F,
+                },
+                king_move: SemiProtoMove {
+                    from: File::E,
+                    to: File::G,
+                },
+            },
+        }
+    }
+
     pub fn new_480(arr: &[Piece; 8]) -> Self {
         let mut west_rook = 0usize;
         let mut east_rook = 0usize;
@@ -68,11 +109,8 @@ impl CastlingMasks {
             }
         }
 
-        let mut res = CastlingMasks {
-            ooo: CastlingMask { rook: 0, king: 0 },
-            oo: CastlingMask { rook: 0, king: 0 },
-        };
-
+        let west_rook = Square::new(west_rook as i8).unwrap();
+        let east_rook = Square::new(east_rook as i8).unwrap();
         let king = Square::new(king as i8).unwrap();
 
         todo!()

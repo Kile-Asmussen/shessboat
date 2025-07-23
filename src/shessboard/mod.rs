@@ -13,7 +13,7 @@ use std::{collections::HashSet, hash::Hash, sync::LazyLock};
 
 use crate::shessboard::{
     boardmap::BoardMap,
-    castling::{CastlingInfo, CastlingMasks, CastlingRights},
+    castling::{CastlingDetail, CastlingDetails, CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece, File, Piece, Rank},
     half::HalfBitBoard,
     masks::Mask,
@@ -62,7 +62,7 @@ impl BitBoard {
         board[48..56].fill(Some(ColorPiece::BlackPawn));
 
         let mut board = BoardMap::new(board);
-        return Self::new_board(&board, Metadata::new_starting_array(&arr));
+        return Self::new_board(&board, Metadata::new());
     }
 
     pub fn new_board(board: &BoardMap<Option<ColorPiece>>, metadata: Metadata) -> Self {
@@ -145,9 +145,14 @@ pub struct Metadata {
     pub change_happened_at: u16,
     pub white_castling: CastlingRights,
     pub black_castling: CastlingRights,
-    pub castling_masks: CastlingMasks,
-    pub rook_files: CastlingInfo<File>,
-    pub en_passant: Option<(Square, Square)>,
+    pub castling_details: CastlingDetails,
+    pub en_passant: Option<EnPassant>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EnPassant {
+    pub to: Square,
+    pub capture: Square,
 }
 
 impl Metadata {
@@ -176,33 +181,14 @@ impl Metadata {
         (self.half_turn - self.change_happened_at) as usize / 2 + 1
     }
 
-    pub fn new_starting_array(array: &[Piece; 8]) -> Self {
-        let mut rook_files = CastlingInfo {
-            ooo: File::A,
-            oo: File::H,
-        };
-
-        let mut king_seen = false;
-        for (n, p) in array.iter().enumerate() {
-            king_seen |= p == &Piece::King;
-
-            if p == &Piece::Rook {
-                if !king_seen {
-                    rook_files.ooo = File::file(n as i8).unwrap()
-                } else {
-                    rook_files.oo = File::file(n as i8).unwrap()
-                }
-            }
-        }
-
+    pub fn new() -> Self {
         Self {
             to_move: Color::White,
             half_turn: 0,
             change_happened_at: 0,
             white_castling: CastlingRights::new(),
             black_castling: CastlingRights::new(),
-            rook_files,
-            castling_masks: CastlingMasks::new_480(&array),
+            castling_details: CastlingDetails::new(),
             en_passant: None,
         }
     }
@@ -220,14 +206,7 @@ impl Metadata {
                 ooo: false,
                 oo: false,
             },
-            rook_files: CastlingInfo {
-                ooo: File::A,
-                oo: File::H,
-            },
-            castling_masks: CastlingMasks {
-                ooo: todo!(),
-                oo: todo!(),
-            },
+            castling_details: CastlingDetails::new(),
             en_passant: None,
         }
     }

@@ -2,8 +2,8 @@ use core::panic::PanicMessage;
 use std::{fmt::Display, fs::metadata};
 
 use crate::shessboard::{
-    BitBoard, CastlingInfo,
-    castling::{CastlingRights, CastlingSide},
+    BitBoard, CastlingInfo, EnPassant,
+    castling::{CastlingDetails, CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, File, Piece, Rank},
     half::HalfBitBoard,
     masks::Mask,
@@ -200,8 +200,10 @@ fn en_passant_into_check() {
     let mut board = BitBoard::empty();
 
     board.metadata.to_move = Color::Black;
-    board.metadata.en_passant =
-        Some((Square::at(File::E, Rank::_3), Square::at(File::E, Rank::_4)));
+    board.metadata.en_passant = Some(EnPassant {
+        to: Square::at(File::E, Rank::_3),
+        capture: Square::at(File::E, Rank::_4),
+    });
 
     board.white.pawns = Pawns::new(Square::at(File::E, Rank::_4).as_mask());
     board.black.pawns = Pawns::new(Square::at(File::D, Rank::_4).as_mask());
@@ -250,12 +252,15 @@ pub struct Move {
 }
 
 impl Move {
-    pub fn en_passant_square(&self) -> Option<(Square, Square)> {
+    pub fn en_passant_square(&self) -> Option<EnPassant> {
         if self.color_and_piece == ColorPiece::WhitePawn {
             if let ((f, Rank::_2), Rank::_4) =
                 (self.from_to.from.algebraic(), self.from_to.to.rank())
             {
-                return Some((Square::at(f, Rank::_3), Square::at(f, Rank::_4)));
+                return Some(EnPassant {
+                    to: Square::at(f, Rank::_3),
+                    capture: Square::at(f, Rank::_4),
+                });
             } else {
                 return None;
             };
@@ -263,7 +268,10 @@ impl Move {
             if let ((f, Rank::_7), Rank::_5) =
                 (self.from_to.from.algebraic(), self.from_to.to.rank())
             {
-                return Some((Square::at(f, Rank::_6), Square::at(f, Rank::_5)));
+                return Some(EnPassant {
+                    to: Square::at(f, Rank::_6),
+                    capture: Square::at(f, Rank::_5),
+                });
             } else {
                 return None;
             };
@@ -272,10 +280,7 @@ impl Move {
         }
     }
 
-    pub fn castling_rights(
-        &self,
-        rook_files: CastlingInfo<File>,
-    ) -> (CastlingRights, CastlingRights) {
+    pub fn castling_rights(&self, details: CastlingDetails) -> (CastlingRights, CastlingRights) {
         let (color, piece) = self.color_and_piece.split();
 
         let mut active = CastlingRights {
@@ -291,22 +296,22 @@ impl Move {
             active.ooo = false;
             active.oo = false;
         } else if piece == Piece::Rook {
-            if self.from_to.from == Square::at(rook_files.ooo, color.starting_rank()) {
+            if self.from_to.from == Square::at(details.ooo.rook_move.from, color.starting_rank()) {
                 active.ooo = false;
             }
 
-            if self.from_to.from == Square::at(rook_files.oo, color.starting_rank()) {
+            if self.from_to.from == Square::at(details.oo.rook_move.from, color.starting_rank()) {
                 active.oo = false;
             }
         }
 
         if let Some((sq, Piece::Rook)) = self.capture {
             if piece == Piece::Rook {
-                if sq == Square::at(rook_files.ooo, color.other().starting_rank()) {
+                if sq == Square::at(details.ooo.rook_move.from, color.other().starting_rank()) {
                     passive.ooo = false;
                 }
 
-                if sq == Square::at(rook_files.oo, color.other().starting_rank()) {
+                if sq == Square::at(details.ooo.rook_move.to, color.other().starting_rank()) {
                     passive.oo = false;
                 }
             }
@@ -397,7 +402,7 @@ impl BitBoard {
         self.metadata.en_passant = mv.en_passant_square();
 
         // calculate changes to castling rights
-        let (cr_active, cr_passive) = mv.castling_rights(self.metadata.rook_files);
+        let (cr_active, cr_passive) = mv.castling_rights(self.metadata.castling_details);
 
         let (active_castling, passive_castling) = self.metadata.castling_right_mut(color);
 
@@ -476,7 +481,7 @@ impl BitBoard {
             active_mask,
             self.passive(),
             *self.metadata.castling_right(color),
-            self.metadata.castling_masks,
+            self.metadata.castling_details,
             res,
         );
     }

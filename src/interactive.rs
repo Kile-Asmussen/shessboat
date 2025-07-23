@@ -112,21 +112,17 @@ impl ShessInteractor {
         let (booo, boo) = castles(metadata.black_castling);
         let epc = metadata
             .en_passant
-            .map(|x| format!("{}", x.0))
+            .map(|x| format!("{}", x.to))
             .unwrap_or("n/a".to_string());
         let turn = metadata.turn();
         let clock = metadata.turn_clock();
-        let (left, right) = (
-            metadata.rook_files.ooo.as_char(),
-            metadata.rook_files.oo.as_char(),
-        );
         let (wooo, woo) = castles(metadata.white_castling);
         let (booo, boo) = castles(metadata.black_castling);
 
         return format!(
             "Turn: {turn} ({clock}), {to_move:?} to move
-White castling righs: {left} {wooo} K {woo} {right}
-Black castling rights: {left} {booo} K {boo} {right}
+White castling righs: {wooo} K {woo}
+Black castling rights: {booo} K {boo}
 En passant square: {epc}",
         );
 

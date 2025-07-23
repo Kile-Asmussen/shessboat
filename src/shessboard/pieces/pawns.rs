@@ -1,4 +1,5 @@
 use crate::shessboard::{
+    EnPassant,
     boardmap::BoardMap,
     enums::{Color, ColorPiece, Dir, Piece, Rank},
     half::HalfBitBoard,
@@ -113,7 +114,7 @@ impl Pawns {
         active_mask: Mask,
         passive_mask: Mask,
         passive: &HalfBitBoard,
-        en_passant: Option<(Square, Square)>,
+        en_passant: Option<EnPassant>,
         kings: Kings,
         res: &mut Vec<Move>,
     ) {
@@ -181,12 +182,12 @@ impl Pawns {
                 );
             }
 
-            if let Some((to, pawn)) = en_passant {
+            if let Some(EnPassant { to, capture }) = en_passant {
                 'out: {
                     if THREATS.at(from).contains(to) {
                         let from_to = ProtoMove { from, to };
 
-                        let capture = Some((pawn, Piece::Pawn));
+                        let capture = Some((capture, Piece::Pawn));
 
                         if from_to.makes_king_checked(
                             active_mask,

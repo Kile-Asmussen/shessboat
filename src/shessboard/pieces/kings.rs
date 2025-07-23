@@ -2,7 +2,7 @@ use std::arch::x86_64::CpuidResult;
 
 use crate::shessboard::{
     boardmap::BoardMap,
-    castling::{CastlingInfo, CastlingMasks, CastlingRights, CastlingSide},
+    castling::{CastlingDetails, CastlingInfo, CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, File, Piece, Rank},
     half::HalfBitBoard,
     masks::Mask,
@@ -110,7 +110,7 @@ impl Kings {
         active_mask: Mask,
         passive: &HalfBitBoard,
         castling: CastlingRights,
-        castling_masks: CastlingMasks,
+        castling_details: CastlingDetails,
         res: &mut Vec<Move>,
     ) {
         let color_and_piece = ColorPiece::new(color, Piece::King);

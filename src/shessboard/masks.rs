@@ -6,7 +6,7 @@ use std::{
 
 use crate::shessboard::{
     boardmap::BoardMap,
-    enums::{Color, ColorPiece, Shade},
+    enums::{Color, ColorPiece, Rank, Shade},
     squares::Square,
 };
 
@@ -55,6 +55,10 @@ impl Mask {
 
     pub const fn as_u64(&self) -> u64 {
         self.0
+    }
+
+    pub const fn as_u8(&self, rank: Rank) -> u8 {
+        self.as_u64().to_le_bytes()[(rank as u8 - 1) as usize]
     }
 
     pub const fn any(&self) -> bool {

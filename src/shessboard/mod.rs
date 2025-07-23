@@ -51,11 +51,17 @@ impl BitBoard {
         Self::new_board(&BoardMap::new_with(None), Metadata::empty())
     }
 
-    pub fn new_960(n: usize) -> Self {
-        Self::new_starting_array(chess_960(n))
+    pub fn new_480(n: usize) -> Self {
+        let arr = chess_960(n);
+        Self::new_starting_array(arr, Metadata::new_480(arr))
     }
 
-    pub fn new_starting_array(mut arr: [Piece; 8]) -> Self {
+    pub fn new_960(n: usize) -> Self {
+        let arr = chess_960(n);
+        Self::new_starting_array(arr, Metadata::new_960(arr))
+    }
+
+    pub fn new_starting_array(arr: [Piece; 8], metadata: Metadata) -> Self {
         let mut board = [None; 64];
 
         board[0..8].copy_from_slice(&arr.map(|p| Some(ColorPiece::new(Color::White, p))));
@@ -64,7 +70,7 @@ impl BitBoard {
         board[48..56].fill(Some(ColorPiece::BlackPawn));
 
         let mut board = BoardMap::new(board);
-        return Self::new_board(&board, Metadata::new());
+        return Self::new_board(&board, metadata);
     }
 
     pub fn new_board(board: &BoardMap<Option<ColorPiece>>, metadata: Metadata) -> Self {

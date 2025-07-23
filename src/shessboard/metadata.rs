@@ -1,6 +1,6 @@
 use crate::shessboard::{
     castling::{CastlingDetails, CastlingRights},
-    enums::Color,
+    enums::{Color, Piece},
     pieces::pawns::EnPassant,
 };
 
@@ -53,6 +53,30 @@ impl Metadata {
         }
     }
 
+    pub fn new_480(arr: [Piece; 8]) -> Self {
+        Self {
+            to_move: Color::White,
+            half_turn: 0,
+            change_happened_at: 0,
+            white_castling: CastlingRights::new(),
+            black_castling: CastlingRights::new(),
+            castling_details: CastlingDetails::new_480(arr),
+            en_passant: None,
+        }
+    }
+
+    pub fn new_960(arr: [Piece; 8]) -> Self {
+        Self {
+            to_move: Color::White,
+            half_turn: 0,
+            change_happened_at: 0,
+            white_castling: CastlingRights::new(),
+            black_castling: CastlingRights::new(),
+            castling_details: CastlingDetails::new_960(arr),
+            en_passant: None,
+        }
+    }
+
     pub fn empty() -> Metadata {
         Self {
             to_move: Color::White,
@@ -66,7 +90,7 @@ impl Metadata {
                 ooo: false,
                 oo: false,
             },
-            castling_details: CastlingDetails::new(),
+            castling_details: CastlingDetails::empty(),
             en_passant: None,
         }
     }

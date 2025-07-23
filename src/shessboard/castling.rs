@@ -100,4 +100,41 @@ impl CastlingDetails {
             },
         }
     }
+
+    pub fn new_480(arr: [Piece; 8]) -> Self {
+        todo!()
+    }
+
+    pub fn new_960(arr: [Piece; 8]) -> Self {
+        todo!()
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            ooo: CastlingDetail {
+                rook_mask: 0,
+                king_mask: 0,
+                rook_move: SemiProtoMove {
+                    from: File::A,
+                    to: File::A,
+                },
+                king_move: SemiProtoMove {
+                    from: File::A,
+                    to: File::A,
+                },
+            },
+            oo: CastlingDetail {
+                rook_mask: 0,
+                king_mask: 0,
+                rook_move: SemiProtoMove {
+                    from: File::A,
+                    to: File::A,
+                },
+                king_move: SemiProtoMove {
+                    from: File::A,
+                    to: File::A,
+                },
+            },
+        }
+    }
 }

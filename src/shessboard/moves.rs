@@ -2,7 +2,7 @@ use core::panic::PanicMessage;
 use std::{fmt::Display, fs::metadata};
 
 use crate::shessboard::{
-    BitBoard, CastlingInfo, EnPassant,
+    BitBoard, CastlingInfo,
     castling::{CastlingDetails, CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, File, Piece, Rank},
     half::HalfBitBoard,
@@ -11,7 +11,7 @@ use crate::shessboard::{
     pieces::{
         kings::Kings,
         knights::{self, Knights},
-        pawns::{self, Pawns},
+        pawns::{self, EnPassant, Pawns},
         rooks::Rooks,
     },
     squares::Square,

@@ -17,11 +17,12 @@ use rand::{
 use crate::{
     interactive::ShessInteractor,
     shessboard::{
-        BitBoard, Metadata,
+        BitBoard,
         boardmap::{BoardMap, BoardMapIter},
         enums::{Color, ColorPiece, File, Piece, Rank, Shade},
         half::HalfBitBoard,
         masks::Mask,
+        metadata::Metadata,
         moves::{Move, ProtoMove},
         notation::{self, Algebraic},
         pieces::{

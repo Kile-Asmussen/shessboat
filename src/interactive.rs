@@ -1,9 +1,10 @@
 use crate::shessboard::{
-    BitBoard, Metadata,
+    BitBoard,
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece},
     masks::Mask,
+    metadata::Metadata,
     moves::{Move, ProtoMove},
     notation::Algebraic,
     squares::Square,

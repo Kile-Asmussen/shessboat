@@ -1,7 +1,7 @@
 use rand::distr::weighted;
 
 use crate::shessboard::{
-    enums::{File, Piece},
+    enums::{File, Piece, Rank},
     moves::ProtoMove,
     pieces::kings::Kings,
     squares::Square,
@@ -60,6 +60,15 @@ pub struct SemiProtoMove {
     pub to: File,
 }
 
+impl SemiProtoMove {
+    pub const fn as_move(&self, rank: Rank) -> ProtoMove {
+        ProtoMove {
+            from: Square::at(self.from, rank),
+            to: Square::at(self.from, rank),
+        }
+    }
+}
+
 impl CastlingDetails {
     pub fn new() -> Self {
         Self {
@@ -90,29 +99,5 @@ impl CastlingDetails {
                 },
             },
         }
-    }
-
-    pub fn new_480(arr: &[Piece; 8]) -> Self {
-        let mut west_rook = 0usize;
-        let mut east_rook = 0usize;
-        let mut king = 0usize;
-
-        for (i, p) in arr.iter().enumerate() {
-            if *p == Piece::Rook {
-                if king == 0 {
-                    west_rook = i;
-                } else {
-                    east_rook = i;
-                }
-            } else if *p == Piece::King {
-                king = i;
-            }
-        }
-
-        let west_rook = Square::new(west_rook as i8).unwrap();
-        let east_rook = Square::new(east_rook as i8).unwrap();
-        let king = Square::new(king as i8).unwrap();
-
-        todo!()
     }
 }

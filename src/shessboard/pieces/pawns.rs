@@ -1,5 +1,4 @@
 use crate::shessboard::{
-    EnPassant,
     boardmap::BoardMap,
     enums::{Color, ColorPiece, Dir, Piece, Rank},
     half::HalfBitBoard,
@@ -222,4 +221,10 @@ impl Pawns {
             }
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EnPassant {
+    pub to: Square,
+    pub capture: Square,
 }

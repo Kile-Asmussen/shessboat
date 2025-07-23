@@ -37,7 +37,7 @@ pub mod interactive;
 pub mod shessboard;
 
 fn main() {
-    interactive_game();
+    random_games_move_enumeration_benchmark(10_000);
 }
 
 fn enumerate_moves_check(mut depth: usize) {
@@ -65,8 +65,7 @@ fn enumerate_moves_check(mut depth: usize) {
     }
 }
 
-fn random_games_move_enumeration_benchmark() {
-    let n = 10_000;
+fn random_games_move_enumeration_benchmark(n: usize) {
     let mut rng = ThreadRng::default();
     let mut engine = ShessInteractor::new();
     let mut longboard = BoardMap::<Option<ColorPiece>>::new_with(None);

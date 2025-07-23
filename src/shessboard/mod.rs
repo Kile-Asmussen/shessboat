@@ -13,7 +13,7 @@ use std::{collections::HashSet, hash::Hash, sync::LazyLock};
 
 use crate::shessboard::{
     boardmap::BoardMap,
-    castling::{CastlingInfo, CastlingRights},
+    castling::{CastlingInfo, CastlingMasks, CastlingRights},
     enums::{Color, ColorPiece, File, Piece, Rank},
     half::HalfBitBoard,
     masks::Mask,
@@ -62,7 +62,7 @@ impl BitBoard {
         board[48..56].fill(Some(ColorPiece::BlackPawn));
 
         let mut board = BoardMap::new(board);
-        return Self::new_board(&board, Metadata::new_starting_array(arr));
+        return Self::new_board(&board, Metadata::new_starting_array(&arr));
     }
 
     pub fn new_board(board: &BoardMap<Option<ColorPiece>>, metadata: Metadata) -> Self {
@@ -141,10 +141,11 @@ impl BitBoard {
 #[derive(Clone, Debug)]
 pub struct Metadata {
     pub to_move: Color,
-    pub half_turn: usize,
-    pub change_happened_at: usize,
+    pub half_turn: u16,
+    pub change_happened_at: u16,
     pub white_castling: CastlingRights,
     pub black_castling: CastlingRights,
+    pub castling_masks: CastlingMasks,
     pub rook_files: CastlingInfo<File>,
     pub en_passant: Option<(Square, Square)>,
 }
@@ -168,14 +169,14 @@ impl Metadata {
     }
 
     pub fn turn(&self) -> usize {
-        self.half_turn / 2 + 1
+        (self.half_turn / 2 + 1) as usize
     }
 
     pub fn turn_clock(&self) -> usize {
-        (self.half_turn - self.change_happened_at) / 2 + 1
+        (self.half_turn - self.change_happened_at) as usize / 2 + 1
     }
 
-    pub fn new_starting_array(array: [Piece; 8]) -> Self {
+    pub fn new_starting_array(array: &[Piece; 8]) -> Self {
         let mut rook_files = CastlingInfo {
             ooo: File::A,
             oo: File::H,
@@ -201,6 +202,7 @@ impl Metadata {
             white_castling: CastlingRights::new(),
             black_castling: CastlingRights::new(),
             rook_files,
+            castling_masks: CastlingMasks::new_480(&array),
             en_passant: None,
         }
     }
@@ -221,6 +223,10 @@ impl Metadata {
             rook_files: CastlingInfo {
                 ooo: File::A,
                 oo: File::H,
+            },
+            castling_masks: CastlingMasks {
+                ooo: todo!(),
+                oo: todo!(),
             },
             en_passant: None,
         }

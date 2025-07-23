@@ -100,7 +100,8 @@ impl ShessInteractor {
 
     pub fn set_turn(&mut self, c: Color, n: usize) {
         self.board.metadata.to_move = c;
-        self.board.metadata.half_turn = (n - 1) * 2 + if c == Color::Black { 1 } else { 0 };
+        self.board.metadata.half_turn =
+            ((n - 1) * 2 + if c == Color::Black { 1 } else { 0 }) as u16;
         self.board.metadata.change_happened_at = self.board.metadata.half_turn;
     }
 

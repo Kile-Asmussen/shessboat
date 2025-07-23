@@ -1,5 +1,5 @@
 use core::panic;
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, sync::atomic::AtomicUsize};
 
 use crate::shessboard::{
     enums::{ColorPiece, Piece},

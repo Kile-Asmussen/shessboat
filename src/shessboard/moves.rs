@@ -476,7 +476,7 @@ impl BitBoard {
             active_mask,
             self.passive(),
             *self.metadata.castling_right(color),
-            self.metadata.rook_files,
+            self.metadata.castling_masks,
             res,
         );
     }

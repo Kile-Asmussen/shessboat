@@ -1,7 +1,5 @@
 use std::{default, fmt::Display, str::FromStr};
 
-use regex::Regex;
-
 use crate::shessboard::{
     castling::{CastlingInfo, CastlingSide},
     enums::{File, Piece, Rank},
@@ -120,131 +118,112 @@ impl Algebraic {
         }
     }
 
-    pub fn read_pawn_capture_preamble(s: &str) -> Option<(File, &str)> {
-        let (f, s) = File::read(s)?;
-        let s = skip_char('x', s)?;
-        Some((f, s))
+    pub fn read(s: &str) -> Option<(Self, &str)> {
+        if let Some((n, s)) = Self::read_pawn_move(s) {
+            Some((Self::Normal(n), s))
+        } else if let Some((n, s)) = Self::read_pawn_move(s) {
+            Some((Self::Normal(n), s))
+        } else if let Some((c, s)) = Self::read_castling(s) {
+            Some((Self::Castling(c), s))
+        } else {
+            None
+        }
     }
 
-    pub fn read_pawn_promotion(s: &str) -> Option<(Piece, &str)> {
-        let s = skip_char('=', s)?;
-        let (p, s) = Piece::read(s, false)?;
-        Some((p, s))
-    }
-
-    pub fn read_pawn_move(s: &str) -> Option<(Self, &str)> {
+    pub fn read_pawn_move(s: &str) -> Option<(Normal, &str)> {
         let (origin_file, s) = try_to(s, Self::read_pawn_capture_preamble);
         let (destination, s) = Square::read(s)?;
         let (promotion, s) = try_to(s, Self::read_pawn_promotion);
         Some((
-            Algebraic::Normal(Normal {
+            Normal {
                 piece: Piece::Pawn,
                 origin_rank: None,
                 origin_file,
                 destination,
                 promotion,
-                capture: false,
-            }),
+                capture: origin_file.is_some(),
+            },
             s,
         ))
     }
 
-    pub fn read_piece_move(s: &str) -> Option<(Self, &str)> {
-        let (piece, s) = Piece::read(s, false);
+    pub fn read_pawn_capture_preamble(s: &str) -> Option<(File, &str)> {
+        let (f, s) = File::read(s)?;
+        let s = skip_char('x', s)?.1;
+        Some((f, s))
     }
 
-    pub fn read(s: &str) -> Option<Self> {
-        let pawn_move = Regex::new(r"\A([abcdefgh][12345678])(?:=([QRBK]))?").ok()?;
-        if let Some(pawn_move) = pawn_move.captures(s) {
-            return Some(Algebraic::Normal(Normal {
-                piece: Piece::Pawn,
-                origin_rank: None,
-                origin_file: None,
-                destination: Self::read_square(pawn_move.get(1)?.as_str())?,
-                promotion: Self::read_piece(pawn_move.get(2).map(|m| m.as_str()).unwrap_or("")),
-                capture: false,
-            }));
-        }
-
-        let pawn_capture =
-            Regex::new(r"\A([abcdefgh])x([abcdefgh][12345678])(?:=([QRBK]))?").ok()?;
-        if let Some(pawn_capture) = pawn_capture.captures(s) {
-            return Some(Algebraic::Normal(Normal {
-                piece: Piece::Pawn,
-                origin_rank: None,
-                origin_file: Some(Self::read_file(pawn_capture.get(1)?.as_str())?),
-                destination: Self::read_square(pawn_capture.get(2)?.as_str())?,
-                promotion: Self::read_piece(pawn_capture.get(3).map(|m| m.as_str()).unwrap_or("")),
-                capture: true,
-            }));
-        }
-
-        let piece_move =
-            Regex::new(r"\A([BNKQR])([abcdefgh]?)([12345678]?)([abcdefgh][12345678])").ok()?;
-        if let Some(piece_move) = piece_move.captures(s) {
-            return Some(Algebraic::Normal(Normal {
-                piece: Self::read_piece(piece_move.get(1)?.as_str())?,
-                origin_rank: Self::read_rank(piece_move.get(2)?.as_str()),
-                origin_file: Self::read_file(piece_move.get(3)?.as_str()),
-                destination: Self::read_square(piece_move.get(4)?.as_str())?,
-                capture: false,
-                promotion: None,
-            }));
-        }
-
-        let piece_capture =
-            Regex::new(r"\A([BNKQR])([abcdefgh]?)([12345678]?)x([abcdefgh][12345678])").ok()?;
-        if let Some(piece_capture) = piece_capture.captures(s) {
-            return Some(Algebraic::Normal(Normal {
-                piece: Self::read_piece(piece_capture.get(1)?.as_str())?,
-                origin_rank: Self::read_rank(piece_capture.get(2)?.as_str()),
-                origin_file: Self::read_file(piece_capture.get(3)?.as_str()),
-                destination: Self::read_square(piece_capture.get(4)?.as_str())?,
-                capture: true,
-                promotion: None,
-            }));
-        }
-
-        let castling = Regex::new(r"\A([oO0]-?[oO0]-?[oO0])|\A([oO0]-?[oO0])").ok()?;
-        if let Some(castling) = castling.captures(s) {
-            if let Some(_) = castling.get(1) {
-                return Some(Algebraic::Castling(CastlingSide::OOO));
-            } else if let Some(_) = castling.get(2) {
-                return Some(Algebraic::Castling(CastlingSide::OO));
-            }
-        }
-
-        return None;
+    pub fn read_pawn_promotion(s: &str) -> Option<(Piece, &str)> {
+        let s = skip_char('=', s)?.1;
+        let (p, s) = Piece::read(s, false)?;
+        Some((p, s))
     }
 
-    pub fn read_square(s: &str) -> Option<Square> {
-        let mut cs = s.chars();
-        Some(Square::at(
-            File::from_char(cs.next()?)?,
-            Rank::from_char(cs.next()?)?,
+    pub fn read_piece_move(s: &str) -> Option<(Normal, &str)> {
+        let (piece, s) = Piece::read(s, false)?;
+        if piece == Piece::Pawn {
+            return None;
+        }
+        let checkpoint = s;
+        let (mut origin_file, s) = try_to(s, File::read);
+        let (mut origin_rank, s) = try_to(s, Rank::read);
+
+        let (mut cap_dest, mut s) = try_to(s, Self::read_piece_destination);
+
+        let ((capture, destination), s) = if let Some(cap_dest) = cap_dest {
+            (cap_dest, s)
+        } else {
+            origin_file = None;
+            origin_rank = None;
+            Self::read_piece_destination(checkpoint)?
+        };
+
+        Some((
+            Normal {
+                piece,
+                origin_rank,
+                origin_file,
+                destination,
+                promotion: None,
+                capture,
+            },
+            s,
         ))
     }
 
-    pub fn read_file(s: &str) -> Option<File> {
-        let mut cs = s.chars();
-        File::from_char(cs.next()?)
+    pub fn read_castling(s: &str) -> Option<(CastlingSide, &str)> {
+        let (o1, s) = try_to(s, skip_o);
+        let o1 = o1.is_some();
+        let (_, s) = try_to(s, skip_dash);
+        let (o2, s) = try_to(s, skip_o);
+        let o2 = o2.is_some();
+        let (_, s) = try_to(s, skip_dash);
+        let (o3, s) = try_to(s, skip_o);
+        let o3 = o3.is_some();
+
+        return Some((
+            match o1 as i32 + o2 as i32 + o3 as i32 {
+                2 => CastlingSide::OO,
+                3 => CastlingSide::OOO,
+                _ => return None,
+            },
+            s,
+        ));
+
+        fn skip_o(s: &str) -> Option<(char, &str)> {
+            skip_any_char(&['o', 'O', '0'], s)
+        }
+
+        fn skip_dash(s: &str) -> Option<((), &str)> {
+            skip_char('-', s)
+        }
     }
 
-    pub fn read_rank(s: &str) -> Option<Rank> {
-        let mut cs = s.chars();
-        Rank::from_char(cs.next()?)
-    }
-
-    pub fn read_piece(s: &str) -> Option<Piece> {
-        let mut cs = s.chars();
-        Some(match cs.next()? {
-            'K' => Piece::King,
-            'Q' => Piece::Queen,
-            'R' => Piece::Rook,
-            'B' => Piece::Bishop,
-            'N' => Piece::Knight,
-            _ => return None,
-        })
+    pub fn read_piece_destination(s: &str) -> Option<((bool, Square), &str)> {
+        let (capture, s) = try_to(s, |s| skip_char('x', s));
+        let capture = capture.is_some();
+        let (destination, s) = Square::read(s)?;
+        Some(((capture, destination), s))
     }
 }
 
@@ -288,7 +267,11 @@ impl FromStr for Algebraic {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Algebraic::read(s).ok_or(())
+        if let Some((a, "")) = Self::read(s) {
+            Ok(a)
+        } else {
+            Err(())
+        }
     }
 }
 
@@ -303,11 +286,41 @@ where
     }
 }
 
-fn skip_char(c: char, s: &str) -> Option<&str> {
+fn skip_char(c: char, s: &str) -> Option<((), &str)> {
     let mut cs = s.chars();
     if c == cs.next()? {
-        Some(cs.as_str())
+        Some(((), cs.as_str()))
     } else {
         None
     }
+}
+
+fn skip_any_char<'a>(a: &[char], s: &'a str) -> Option<(char, &'a str)> {
+    let mut cs = s.chars();
+    let c = cs.next()?;
+    if a.contains(&c) {
+        Some((c, cs.as_str()))
+    } else {
+        None
+    }
+}
+
+fn many<F, T>(mut s: &str, mut f: F) -> (Vec<T>, &str)
+where
+    F: FnMut(&str) -> Option<(T, &str)>,
+{
+    let mut res = vec![];
+    while let Some((t, ss)) = f(s) {
+        res.push(t);
+        s = ss;
+    }
+    (res, s)
+}
+
+fn some<F, T>(s: &str, f: F) -> Option<(Vec<T>, &str)>
+where
+    F: FnMut(&str) -> Option<(T, &str)>,
+{
+    let (res, s) = many(s, f);
+    if res.len() == 0 { None } else { Some((res, s)) }
 }

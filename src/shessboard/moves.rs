@@ -230,7 +230,8 @@ fn en_passant_into_check() {
     let mut moves = vec![];
     board.generate_moves(&mut moves);
 
-    let not = Algebraic::read("dxe3").unwrap();
+    let (not, s) = Algebraic::read("dxe3").unwrap();
+    assert_eq!(s, "");
 
     assert_eq!(not.find(&moves), vec![]);
 }

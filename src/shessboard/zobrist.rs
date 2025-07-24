@@ -39,7 +39,7 @@ impl Display for ReadHashesError {
 }
 
 pub type MaskHasher = BoardMap<HashResult>;
-pub type HashResult = u128;
+pub type HashResult = u64;
 
 impl MaskHasher {
     pub fn hash_square(&self, sq: Square) -> HashResult {

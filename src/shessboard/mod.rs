@@ -7,6 +7,7 @@ pub mod metadata;
 pub mod moves;
 pub mod notation;
 pub mod pieces;
+pub mod repetions;
 pub mod squares;
 pub mod zobrist;
 

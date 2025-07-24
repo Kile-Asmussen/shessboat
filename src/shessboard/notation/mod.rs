@@ -120,6 +120,39 @@ impl Algebraic {
         }
     }
 
+    pub fn read_pawn_capture_preamble(s: &str) -> Option<(File, &str)> {
+        let (f, s) = File::read(s)?;
+        let s = skip_char('x', s)?;
+        Some((f, s))
+    }
+
+    pub fn read_pawn_promotion(s: &str) -> Option<(Piece, &str)> {
+        let s = skip_char('=', s)?;
+        let (p, s) = Piece::read(s, false)?;
+        Some((p, s))
+    }
+
+    pub fn read_pawn_move(s: &str) -> Option<(Self, &str)> {
+        let (origin_file, s) = try_to(s, Self::read_pawn_capture_preamble);
+        let (destination, s) = Square::read(s)?;
+        let (promotion, s) = try_to(s, Self::read_pawn_promotion);
+        Some((
+            Algebraic::Normal(Normal {
+                piece: Piece::Pawn,
+                origin_rank: None,
+                origin_file,
+                destination,
+                promotion,
+                capture: false,
+            }),
+            s,
+        ))
+    }
+
+    pub fn read_piece_move(s: &str) -> Option<(Self, &str)> {
+        let (piece, s) = Piece::read(s, false);
+    }
+
     pub fn read(s: &str) -> Option<Self> {
         let pawn_move = Regex::new(r"\A([abcdefgh][12345678])(?:=([QRBK]))?").ok()?;
         if let Some(pawn_move) = pawn_move.captures(s) {
@@ -256,5 +289,25 @@ impl FromStr for Algebraic {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Algebraic::read(s).ok_or(())
+    }
+}
+
+fn try_to<F, T>(s: &str, mut f: F) -> (Option<T>, &str)
+where
+    F: FnMut(&str) -> Option<(T, &str)>,
+{
+    if let Some((t, s)) = f(s) {
+        (Some(t), s)
+    } else {
+        (None, s)
+    }
+}
+
+fn skip_char(c: char, s: &str) -> Option<&str> {
+    let mut cs = s.chars();
+    if c == cs.next()? {
+        Some(cs.as_str())
+    } else {
+        None
     }
 }

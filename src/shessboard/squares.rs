@@ -102,8 +102,12 @@ impl Square {
         res
     }
 
-    pub fn invariant(&self) {
-        assert_eq!(self.as_mask().occupied(), 1);
+    pub fn read(s: &str) -> Option<(Self, &str)> {
+        let mut cs = s.chars();
+        Some((
+            Self::at(File::from_char(cs.next()?)?, Rank::from_char(cs.next()?)?),
+            cs.as_str(),
+        ))
     }
 }
 

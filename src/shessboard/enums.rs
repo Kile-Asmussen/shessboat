@@ -128,6 +128,11 @@ impl Rank {
             _ => return None,
         })
     }
+
+    pub fn read(s: &str) -> Option<(Self, &str)> {
+        let mut cs = s.chars();
+        Self::from_char(cs.next()?).map(|p| (p, cs.as_str()))
+    }
 }
 
 #[test]
@@ -206,6 +211,11 @@ impl File {
             _ => return None,
         })
     }
+
+    pub fn read(s: &str) -> Option<(Self, &str)> {
+        let mut cs = s.chars();
+        Self::from_char(cs.next()?).map(|p| (p, cs.as_str()))
+    }
 }
 
 #[test]
@@ -271,6 +281,23 @@ impl Piece {
             Piece::Queen => '\u{2655}',
             Piece::King => '\u{2654}',
         }
+    }
+
+    pub fn read(s: &str, implicit_pawn: bool) -> Option<(Self, &str)> {
+        let mut cs = s.chars();
+        Some((
+            match cs.next() {
+                Some('K') => Piece::King,
+                Some('Q') => Piece::Queen,
+                Some('R') => Piece::Rook,
+                Some('B') => Piece::Bishop,
+                Some('N') => Piece::Knight,
+                Some('P') if !implicit_pawn => Piece::Pawn,
+                _ if implicit_pawn => return Some((Piece::Pawn, s)),
+                _ => return None,
+            },
+            cs.as_str(),
+        ))
     }
 }
 
@@ -398,30 +425,34 @@ impl ColorPiece {
         })
     }
 
-    pub fn from_str(c: &str) -> Option<Self> {
-        use ColorPiece::*;
-        Some(match c {
-            "P" => WhitePawn,
-            "N" => WhiteKnight,
-            "B" => WhiteBishop,
-            "R" => WhiteRook,
-            "Q" => WhiteQueen,
-            "K" => WhiteKing,
-            "p" => BlackPawn,
-            "n" => BlackKnight,
-            "b" => BlackBishop,
-            "r" => BlackRook,
-            "q" => BlackQueen,
-            "k" => BlackKing,
-            _ => return None,
-        })
-    }
-
     pub const fn unicode(&self) -> char {
         use ColorPiece::*;
         match self.color() {
             Color::White => self.piece().white_unicode(),
             Color::Black => self.piece().black_unicode(),
         }
+    }
+
+    pub fn read(s: &str) -> Option<(Self, &str)> {
+        use ColorPiece::*;
+        let mut cs = s.chars();
+        Some((
+            match cs.next()? {
+                'P' => WhitePawn,
+                'N' => WhiteKnight,
+                'B' => WhiteBishop,
+                'R' => WhiteRook,
+                'Q' => WhiteQueen,
+                'K' => WhiteKing,
+                'p' => BlackPawn,
+                'n' => BlackKnight,
+                'b' => BlackBishop,
+                'r' => BlackRook,
+                'q' => BlackQueen,
+                'k' => BlackKing,
+                _ => return None,
+            },
+            cs.as_str(),
+        ))
     }
 }

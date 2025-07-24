@@ -283,8 +283,8 @@ fn interactive_game() {
                 }
                 "i" => {
                     if let (Some(p), Some(sq)) = (command.get(1), command.get(2)) {
-                        if let (Some(p), Some(sq)) =
-                            (ColorPiece::from_str(*p), Algebraic::read_square(*sq))
+                        if let (Some((p, "")), Some(sq)) =
+                            (ColorPiece::read(*p), Algebraic::read_square(*sq))
                         {
                             interactor.place(Some(p), sq);
                             continue 'redraw;

@@ -3,6 +3,7 @@ use crate::shessboard::{
     enums::{Color, ColorPiece, Dir, Piece, Shade},
     masks::Mask,
     pieces::{
+        Micropawns,
         bishops::{self, Bishops},
         kings::Kings,
         knights::Knights,
@@ -181,5 +182,13 @@ impl HalfBitBoard {
             || (light_bishops > 0 && dark_bishops > 0)
             || (knights >= 2)
             || (knights == 1 && (light_bishops + dark_bishops) == 1)
+    }
+
+    pub fn materiel(&self) -> Micropawns {
+        self.pawns.materiel()
+            + self.knights.materiel()
+            + self.bishops.materiel()
+            + self.rooks.materiel()
+            + self.queens.materiel()
     }
 }

@@ -22,11 +22,12 @@ use crate::shessboard::{
     metadata::Metadata,
     moves::Move,
     pieces::{
-        Micropawns, bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns,
+        Micropawns, P, bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns,
         queens::Queens, rooks::Rooks,
     },
+    repetions::ThreefoldRule,
     squares::Square,
-    zobrist::BitBoardHasher,
+    zobrist::{BitBoardHasher, HashResult},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -157,37 +158,49 @@ impl BitBoard {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
-pub enum Victory {
-    White = 1,
-    Black = 2,
+pub enum GameEnd {
+    WhiteWins = 1,
+    BlackWins = 2,
     Draw = 3,
 }
 
-impl Victory {
-    pub const fn value(&self) -> Micropawns {
-        match self {
-            Victory::White => 1_000_000_000_000_000,
-            Victory::Black => -1_000_000_000_000_000,
-            Victory::Draw => 0,
+impl GameEnd {
+    pub const fn value(&self, c: Color) -> Micropawns {
+        if let GameEnd::Draw = *self {
+            0
+        } else if let (GameEnd::WhiteWins, Color::White) = (*self, c) {
+            Self::VICTORY
+        } else if let (GameEnd::BlackWins, Color::Black) = (*self, c) {
+            Self::VICTORY
+        } else {
+            Self::DEFEAT
         }
     }
 
+    pub const VICTORY: Micropawns = 1_000_000 * P;
+    pub const DEFEAT: Micropawns = -Self::VICTORY;
+
     pub const fn from_color(c: Color) -> Self {
         match c {
-            Color::White => Self::White,
-            Color::Black => Self::Black,
+            Color::White => Self::WhiteWins,
+            Color::Black => Self::BlackWins,
         }
     }
 
     pub const fn to_str(&self) -> &'static str {
         match self {
-            Self::White => "0–1",
-            Self::Black => "1–0",
+            Self::WhiteWins => "0–1",
+            Self::BlackWins => "1–0",
             Self::Draw => "½–½",
         }
     }
 
-    pub fn determine(board: &BitBoard, moves: &[Move]) -> Option<Self> {
+    pub fn determine<'a>(
+        board: &BitBoard,
+        moves: &[Move],
+        hash: HashResult,
+        three: &'a ThreefoldRule<'a>,
+    ) -> Option<Self> {
         if board.metadata.tempo - board.metadata.last_change >= 150 {
             Some(Self::Draw)
         } else if moves.len() == 0 {
@@ -198,6 +211,7 @@ impl Victory {
             }
         } else if !board.sufficient_checkmating_materiel() {
             Some(Self::Draw)
+        } else if three.count(hash) >= 3 {
         } else {
             None
         }

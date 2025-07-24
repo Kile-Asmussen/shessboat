@@ -18,7 +18,7 @@ use rand::{
 use crate::{
     interactive::ShessInteractor,
     shessboard::{
-        BitBoard, Victory,
+        BitBoard, GameEnd,
         boardmap::{BoardMap, BoardMapIter},
         enums::{Color, ColorPiece, File, Piece, Rank, Shade},
         half::HalfBitBoard,
@@ -35,9 +35,9 @@ use crate::{
     },
 };
 
-pub mod engine;
 pub mod interactive;
 pub mod shessboard;
+pub mod shessboat;
 
 fn main() {
     interactive_game();

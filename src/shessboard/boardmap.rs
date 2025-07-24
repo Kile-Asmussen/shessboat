@@ -5,6 +5,7 @@ use rand::Fill;
 use crate::shessboard::{
     enums::{ColorPiece, File, Rank},
     masks::{Mask, SquareIter},
+    pieces::Micropawns,
     squares::Square,
 };
 
@@ -93,19 +94,6 @@ impl BoardMap<bool> {
     }
 }
 
-impl BoardMap<char> {
-    pub const fn to_mask(&self, c: char) -> Mask {
-        let mut res = Mask::nil();
-        let mut it = self.iter();
-        while let Some((sq, x)) = it.next() {
-            if c == x {
-                res = res.set(sq);
-            }
-        }
-        res
-    }
-}
-
 impl BoardMap<Option<ColorPiece>> {
     pub const fn to_mask(&self, c: ColorPiece) -> Mask {
         let mut res = Mask::nil();
@@ -121,12 +109,57 @@ impl BoardMap<Option<ColorPiece>> {
     }
 }
 
-#[test]
-fn why_u_no_worky() {
-    let mut x = BoardMap::new_with(None);
-    x.set(Square::at(File::A, Rank::_1), Some(ColorPiece::WhiteKing));
+impl BoardMap<Micropawns> {
+    pub const fn sum_mask(&self, m: Mask) -> Micropawns {
+        let mut res = 0;
+        let mut it = m.iter();
+        while let Some(sq) = it.next() {
+            res += self.at(sq)
+        }
+        res
+    }
 
-    assert_eq!(x.to_mask(ColorPiece::WhiteKing), Mask::new(1));
+    pub const fn board(b: &[[Micropawns; 8]; 8]) -> Self {
+        let mut res = [0; 64];
+        let mut it = Mask::full().iter();
+
+        while let Some(sq) = it.next() {
+            res[sq.index() as usize] =
+                b[7 - sq.rank().as_rank() as usize][sq.file().as_file() as usize];
+        }
+
+        Self::new(res)
+    }
+
+    pub const fn board_and_mirror(b: &[[Micropawns; 8]; 8]) -> (Self, Self) {
+        let mut b = *b;
+        let white = Self::board(&b);
+        let b = [b[7], b[6], b[5], b[4], b[3], b[2], b[1], b[0]];
+        let black = Self::board(&b);
+        (white, black)
+    }
+}
+
+#[test]
+fn board_setup() {
+    let board = BoardMap::board(&[
+        [5, 0, 0, 0, 0, 0, 0, 6],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 4, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 2, 0, 0, 3],
+    ]);
+
+    assert_eq!(board.at(Square::a1), 1);
+    assert_eq!(board.at(Square::a2), 0);
+    assert_eq!(board.at(Square::e1), 2);
+    assert_eq!(board.at(Square::h1), 3);
+    assert_eq!(board.at(Square::d4), 4);
+    assert_eq!(board.at(Square::a8), 5);
+    assert_eq!(board.at(Square::h8), 6);
 }
 
 impl<T> Fill for BoardMap<T>

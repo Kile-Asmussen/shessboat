@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::shessboard::zobrist::HashResult;
 
-enum ThreefoldRule<'a> {
+pub enum ThreefoldRule<'a> {
     Static(HashMap<HashResult, usize>),
     Speculative(HashResult, &'a ThreefoldRule<'a>),
 }

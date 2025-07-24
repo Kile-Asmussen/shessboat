@@ -1,5 +1,5 @@
 use crate::shessboard::{
-    BitBoard, Victory,
+    BitBoard, GameEnd,
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece},
@@ -144,8 +144,8 @@ En passant square: {epc}",
         }
     }
 
-    pub fn victory(&self) -> Option<Victory> {
-        Victory::determine(&self.board, &self.moves)
+    pub fn victory(&self) -> Option<GameEnd> {
+        GameEnd::determine(&self.board, &self.moves)
     }
 
     pub fn printable_moves(&self) -> Vec<String> {

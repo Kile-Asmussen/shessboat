@@ -40,7 +40,7 @@ pub mod interactive;
 pub mod shessboard;
 
 fn main() {
-    zobrist_hashing_check(10000);
+    interactive_game();
 }
 
 fn zobrist_hashing_check(n: usize) {

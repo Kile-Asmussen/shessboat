@@ -2,9 +2,10 @@ use crate::shessboard::squares::Square;
 
 use super::masks::Mask;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 #[repr(u8)]
 pub enum Color {
+    #[default]
     White = 1,
     Black,
 }

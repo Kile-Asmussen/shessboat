@@ -89,7 +89,8 @@ impl Kings {
         res: &mut Vec<Move>,
     ) {
         let color_and_piece = ColorPiece::new(color, Piece::King);
-        let threats = passive.threats(color.other(), active_mask, None);
+
+        let threats = passive.threats(color.other(), active_mask ^ self.as_mask(), None);
 
         if !self.as_mask().any() {
             return;
@@ -114,6 +115,12 @@ impl Kings {
         }
 
         let unking = (passive_mask | active_mask) & !self.as_mask();
+
+        let threats = if castling.ooo || castling.oo {
+            passive.threats(color.other(), active_mask, None)
+        } else {
+            Mask::nil()
+        };
 
         if castling.ooo {
             Self::castling_move(

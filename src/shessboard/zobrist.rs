@@ -1,10 +1,12 @@
 use std::{
     backtrace,
-    collections::{HashMap, btree_map::Values},
+    collections::{BTreeSet, HashMap, HashSet, btree_map::Values},
     error::{self, Error},
-    fmt::Display,
+    fmt::{Debug, Display, UpperHex},
+    hash::Hash,
     io::{self, BufReader, Read, Write},
     mem::size_of,
+    ops::{BitXor, BitXorAssign},
     path::Path,
 };
 
@@ -18,54 +20,14 @@ use crate::shessboard::{
     half::HalfBitBoard,
     masks::Mask,
     moves::Move,
-    pieces::{Micropawns, pawns::Pawns},
+    pieces::{
+        Micropawns,
+        pawns::{EnPassant, Pawns},
+    },
     squares::Square,
 };
 
-pub type PositionHashes = HashMap<HashResult, (u64, Micropawns)>;
-
-fn save_position_hashes(ph: &PositionHashes, f: &Path) -> Result<(), Box<dyn Error>> {
-    let mut file = std::io::BufWriter::new(std::fs::File::create(f)?);
-    for (k, v) in ph {
-        file.write(&k.to_le_bytes())?;
-        file.write(&v.0.to_le_bytes())?;
-        file.write(&v.1.to_le_bytes())?;
-    }
-    Ok(())
-}
-
-fn recover_position_hashes(f: &Path) -> Result<PositionHashes, Box<dyn Error>> {
-    let file = std::fs::File::open(f)?;
-    let filesize = file.metadata()?.len();
-    let positions = filesize
-        / (size_of::<HashResult>() as u64
-            + size_of::<Micropawns>() as u64
-            + size_of::<u64>() as u64);
-    let mut result = PositionHashes::with_capacity(positions as usize);
-    let mut file = BufReader::new(file);
-
-    let mut position_buf = [0u8; size_of::<HashResult>()];
-    let mut weight_buf = [0u8; size_of::<u64>()];
-    let mut depth_buf = [0u8; size_of::<Micropawns>()];
-
-    loop {
-        if file.read(&mut position_buf)? != size_of::<HashResult>() {
-            return Err(Box::new(ReadHashesError));
-        }
-        if file.read(&mut depth_buf)? != size_of::<u64>() {
-            return Err(Box::new(ReadHashesError));
-        }
-        if file.read(&mut weight_buf)? != size_of::<Micropawns>() {
-            return Err(Box::new(ReadHashesError));
-        }
-        let position = HashResult::from_le_bytes(position_buf);
-        let depth = u64::from_le_bytes(depth_buf);
-        let weight = Micropawns::from_le_bytes(weight_buf);
-        result.insert(position, (depth, weight));
-    }
-
-    Ok(result)
-}
+pub type PositionHashes = HashMap<HashResult, Micropawns>;
 
 #[derive(Debug, Default)]
 struct ReadHashesError;
@@ -81,13 +43,13 @@ pub type HashResult = u128;
 
 impl MaskHasher {
     pub fn hash_square(&self, sq: Square) -> HashResult {
-        self.at(sq)
+        self.at_clone(sq)
     }
 
     pub fn hash_mask(&self, m: Mask) -> HashResult {
-        let mut res = 0;
+        let mut res = 0; // HashResult::default();
         for sq in m.iter() {
-            res ^= self.hash_square(sq);
+            res ^= self.at_clone(sq);
         }
         res
     }
@@ -96,7 +58,7 @@ impl MaskHasher {
 #[derive(Default)]
 pub struct BitBoardHasher {
     pub black_to_move: HashResult,
-    pub en_passant_possible: HashResult,
+    pub en_passant_file: [HashResult; 8],
     pub white: HalfBitBoardHasher,
     pub black: HalfBitBoardHasher,
 }
@@ -107,50 +69,88 @@ impl BitBoardHasher {
     pub fn new() -> Self {
         let mut rng = rand::rngs::StdRng::from_seed(*Self::PI);
         let mut res = Self::default();
+        // res.black.color = Color::Black;
         res.fill(&mut rng);
         res
     }
 
-    pub fn hash(&self, board: &BitBoard) -> HashResult {
+    pub fn hash_full(&self, board: &BitBoard) -> HashResult {
         self.hash_to_move(board.metadata.to_move)
-            ^ self.hash_en_passant(board.metadata.en_passant.is_some())
+            ^ self.hash_en_passant(board.metadata.en_passant)
+            ^ self.white.hash_castle(board.metadata.white_castling)
+            ^ self.black.hash_castle(board.metadata.black_castling)
             ^ self.white.hash(&board.white)
             ^ self.black.hash(&board.black)
     }
 
     pub fn hash_to_move(&self, turn: Color) -> HashResult {
         if turn == Color::Black {
-            self.black_to_move
+            self.black_to_move //.clone()
         } else {
             0
+            // HashResult::default()
         }
     }
 
-    pub fn hash_en_passant(&self, en_passant: bool) -> HashResult {
-        if en_passant {
-            self.en_passant_possible
+    pub fn hash_en_passant(&self, en_passant: Option<EnPassant>) -> HashResult {
+        if let Some(EnPassant { to, capture }) = en_passant {
+            self.en_passant_file[to.file().as_file() as usize] //.clone()
         } else {
             0
+            //HashResult::default()
         }
     }
 
-    pub fn hash_add_a_move(&self, mut hash: HashResult, mv: Move) -> HashResult {
-        let (same, opposite) = match mv.color_and_piece.color() {
+    pub fn delta_hash_move(&self, board: &BitBoard, mut hash: HashResult, mv: Move) -> HashResult {
+        let (color, piece) = mv.color_and_piece.split();
+
+        let (same, opposite) = match color {
             Color::White => (&self.white, &self.black),
             Color::Black => (&self.black, &self.white),
         };
 
-        let mut res = same.hash_piece(mv.color_and_piece.piece(), mv.from_to.from)
-            ^ same.hash_piece(mv.color_and_piece.piece(), mv.from_to.to);
+        hash ^= self.black_to_move; //.clone();
 
-        res
+        if let Some(p) = mv.promotion {
+            hash ^=
+                same.hash_piece(Piece::Pawn, mv.from_to.from) ^ same.hash_piece(p, mv.from_to.to)
+        } else {
+            hash ^= same.hash_piece(piece, mv.from_to.from) ^ same.hash_piece(piece, mv.from_to.to);
+        }
+
+        if let Some((sq, p)) = mv.capture {
+            hash ^= opposite.hash_piece(p, sq);
+        }
+
+        if let Some(cast) = mv.castling {
+            hash ^= same.hash_piece(Piece::Rook, cast.from) ^ same.hash_piece(Piece::Rook, cast.to)
+        }
+
+        let (mut same_cast, mut opp_cast) = board.metadata.castling_rights(color);
+        let (same_new_cast, opp_new_cast) = mv.castling_rights(board.metadata.castling_details);
+
+        hash ^= same.hash_castle(same_cast) ^ opposite.hash_castle(opp_cast);
+        same_cast.update(same_new_cast);
+        opp_cast.update(opp_new_cast);
+        hash ^= same.hash_castle(same_cast) ^ opposite.hash_castle(opp_cast);
+
+        hash ^= self.hash_en_passant(board.metadata.en_passant)
+            ^ self.hash_en_passant(mv.en_passant_square());
+
+        hash
     }
 }
 
 impl Fill for BitBoardHasher {
     fn fill<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
         self.black_to_move = rng.random();
-        self.en_passant_possible = rng.random();
+        self.en_passant_file.fill(rng);
+        // self.black_to_move = BTreeSetWrapper(BTreeSet::from_iter(["black".to_string()]));
+        // let q = "abcdefgh"
+        //     .chars()
+        //     .map(|c| BTreeSetWrapper(BTreeSet::from_iter([format!("epc {}", c)])))
+        //     .collect::<Vec<_>>();
+        // self.en_passant_file = std::array::from_fn(|n| q[n].clone());
         self.white.fill(rng);
         self.black.fill(rng);
     }
@@ -158,6 +158,7 @@ impl Fill for BitBoardHasher {
 
 #[derive(Default, Debug)]
 pub struct HalfBitBoardHasher {
+    // pub color: Color,
     pub castling: CastlingInfo<HashResult>,
     pub kings: MaskHasher,
     pub queens: MaskHasher,
@@ -193,22 +194,94 @@ impl HalfBitBoardHasher {
     }
 
     pub fn hash_castle(&self, castling: CastlingRights) -> HashResult {
-        (if castling.ooo { self.castling.ooo } else { 0 })
-            ^ (if castling.oo { self.castling.oo } else { 0 })
+        (if castling.ooo {
+            self.castling.ooo //.clone()
+        } else {
+            0
+            //HashResult::default()
+        }) ^ (if castling.oo {
+            self.castling.oo //.clone()
+        } else {
+            0
+            //HashResult::default()
+        })
     }
 }
 
 impl Fill for HalfBitBoardHasher {
     fn fill<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
+        // if self.color == Color::White {
         self.castling = CastlingInfo {
             ooo: rng.random(),
+            // ooo: BTreeSetWrapper(BTreeSet::from_iter(["O-O-O".to_string()])),
             oo: rng.random(),
+            // oo: BTreeSetWrapper(BTreeSet::from_iter(["O-O".to_string()])),
         };
-        self.kings.fill(rng);
-        self.queens.fill(rng);
-        self.rooks.fill(rng);
-        self.bishops.fill(rng);
-        self.knights.fill(rng);
-        self.pawns.fill(rng);
+        // } else {
+        //     self.castling = CastlingInfo {
+        //         ooo: BTreeSetWrapper(BTreeSet::from_iter(["o-o-o".to_string()])),
+        //         oo: BTreeSetWrapper(BTreeSet::from_iter(["o-o".to_string()])),
+        //     };
+        // }
+
+        self.kings.fill(rng /* self.color, Piece::King */);
+        self.queens.fill(rng /* self.color, Piece::Queen */);
+        self.rooks.fill(rng /* self.color, Piece::Rook */);
+        self.bishops.fill(rng /* self.color, Piece::Bishop */);
+        self.knights.fill(rng /* self.color, Piece::Knight */);
+        self.pawns.fill(rng /* self.color, Piece::Pawn */);
     }
 }
+
+// #[derive(Clone, Debug, PartialEq, Eq, Default)]
+// pub struct BTreeSetWrapper(BTreeSet<String>);
+// impl BitXor for BTreeSetWrapper {
+//     type Output = BTreeSetWrapper;
+
+//     fn bitxor(self, rhs: Self) -> Self::Output {
+//         Self(
+//             self.0
+//                 .symmetric_difference(&rhs.0)
+//                 .map(|s| s.clone())
+//                 .collect(),
+//         )
+//     }
+// }
+// impl BitXorAssign for BTreeSetWrapper {
+//     fn bitxor_assign(&mut self, rhs: Self) {
+//         *self = self.clone() ^ rhs;
+//     }
+// }
+// impl Display for BTreeSetWrapper {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         Debug::fmt(&self, f)
+//     }
+// }
+// impl UpperHex for BTreeSetWrapper {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         Debug::fmt(&self, f)
+//     }
+// }
+// impl Hash for BTreeSetWrapper {
+//     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+//         for s in &self.0 {
+//             s.hash(state)
+//         }
+//     }
+// }
+//
+// impl BoardMap<BTreeSetWrapper> {
+//     pub fn fill<R: ?Sized>(&mut self, _: &mut R, c: Color, p: Piece) {
+//         let color_piece = ColorPiece::new(c, p);
+//         for sq in Mask::full() {
+//             self.set_clone(
+//                 sq,
+//                 BTreeSetWrapper(BTreeSet::from_iter([format!(
+//                     "{}{}",
+//                     color_piece.letter(),
+//                     sq
+//                 )])),
+//             );
+//         }
+//     }
+// }

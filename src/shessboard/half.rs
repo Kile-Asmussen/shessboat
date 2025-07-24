@@ -13,7 +13,7 @@ use crate::shessboard::{
     squares::Square,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HalfBitBoard {
     pub kings: Kings,
     pub queens: Queens,

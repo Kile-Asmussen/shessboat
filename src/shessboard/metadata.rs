@@ -4,7 +4,7 @@ use crate::shessboard::{
     pieces::pawns::EnPassant,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Metadata {
     pub to_move: Color,
     pub tempo: u16,
@@ -16,14 +16,14 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn castling_right(&self, color: Color) -> &CastlingRights {
+    pub fn castling_rights(&self, color: Color) -> (CastlingRights, CastlingRights) {
         match color {
-            Color::White => &self.white_castling,
-            Color::Black => &self.black_castling,
+            Color::White => (self.white_castling, self.black_castling),
+            Color::Black => (self.black_castling, self.white_castling),
         }
     }
 
-    pub fn castling_right_mut(
+    pub fn castling_rights_mut(
         &mut self,
         color: Color,
     ) -> (&mut CastlingRights, &mut CastlingRights) {

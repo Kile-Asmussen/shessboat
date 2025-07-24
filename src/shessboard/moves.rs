@@ -307,11 +307,13 @@ impl Move {
 
         if let Some((sq, Piece::Rook)) = self.capture {
             if piece == Piece::Rook {
-                if sq == Square::at(details.ooo.rook_move.from, color.other().starting_rank()) {
+                let color = color.other();
+
+                if sq == Square::at(details.ooo.rook_move.from, color.starting_rank()) {
                     passive.ooo = false;
                 }
 
-                if sq == Square::at(details.ooo.rook_move.to, color.other().starting_rank()) {
+                if sq == Square::at(details.oo.rook_move.from, color.starting_rank()) {
                     passive.oo = false;
                 }
             }
@@ -358,38 +360,6 @@ fn size_fuckery() {
 }
 
 impl BitBoard {
-    pub fn compatible(&self, mv: &Move) -> bool {
-        if mv.color_and_piece.color() != self.metadata.to_move {
-            return false;
-        }
-
-        let color = mv.color_and_piece.color();
-
-        let Some(piece) = self.color(color).piece_at(mv.from_to.from) else {
-            return false;
-        };
-
-        if mv.color_and_piece.piece() != piece {
-            return false;
-        }
-
-        if let Some(rm) = mv.castling {
-            if rm.positive() && !self.metadata.castling_right(color).oo {
-                return false;
-            } else if !rm.positive() && !self.metadata.castling_right(color).ooo {
-                return false;
-            }
-        }
-
-        if let Some((sq, p)) = mv.capture {
-            if self.color(color).piece_at(sq) != Some(p) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     pub fn apply(&mut self, mv: Move) {
         let (color, piece) = mv.color_and_piece.split();
 
@@ -404,7 +374,7 @@ impl BitBoard {
         // calculate changes to castling rights
         let (cr_active, cr_passive) = mv.castling_rights(self.metadata.castling_details);
 
-        let (active_castling, passive_castling) = self.metadata.castling_right_mut(color);
+        let (active_castling, passive_castling) = self.metadata.castling_rights_mut(color);
 
         active_castling.update(cr_active);
         passive_castling.update(cr_passive);
@@ -481,7 +451,7 @@ impl BitBoard {
             active_mask,
             passive_mask,
             self.passive(),
-            *self.metadata.castling_right(color),
+            self.metadata.castling_rights(color).0,
             self.metadata.castling_details,
             res,
         );

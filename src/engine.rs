@@ -5,17 +5,17 @@ use crate::shessboard::{
     zobrist::{BitBoardHasher, PositionHashes},
 };
 
-pub struct ShessEngine {
+pub struct ShessEngine<'a> {
+    pub hasher: &'a BitBoardHasher,
     pub hashes: PositionHashes,
-    pub hasher: BitBoardHasher,
     pub board: BitBoard,
 }
 
-impl ShessEngine {
-    pub fn new() -> Self {
+impl<'a> ShessEngine<'a> {
+    pub fn new(hasher: &'a BitBoardHasher) -> Self {
         Self {
             hashes: HashMap::new(),
-            hasher: BitBoardHasher::new(),
+            hasher,
             board: BitBoard::empty(),
         }
     }

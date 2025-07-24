@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 use std::{
+    collections::{HashMap, HashSet},
     io::{Write, stdin, stdout},
     str::FromStr,
     thread::sleep,
@@ -9,8 +10,8 @@ use std::{
 
 use colored::Colorize;
 use rand::{
-    Rng, rng,
-    rngs::ThreadRng,
+    Rng, SeedableRng, rng,
+    rngs::{StdRng, ThreadRng},
     seq::{IndexedRandom, SliceRandom},
 };
 
@@ -30,6 +31,7 @@ use crate::{
             rooks::Rooks, slide_move_stop,
         },
         squares::Square,
+        zobrist::{BitBoardHasher, HashResult},
     },
 };
 
@@ -38,21 +40,120 @@ pub mod interactive;
 pub mod shessboard;
 
 fn main() {
-    interactive_game();
+    zobrist_hashing_check(10000);
 }
 
-fn enumerate_moves_check(mut depth: usize) {
-    println!("-- Depth checks to depth {depth} --");
+fn zobrist_hashing_check(n: usize) {
+    let mut rng = StdRng::from_seed(*b"3.141592653589793238462643383279");
+    let hasher = BitBoardHasher::new();
+    let mut hashes = HashMap::<HashResult, BitBoard>::new();
+    let mut engine = ShessInteractor::new();
+    println!("\nRunning {n} random games...\n");
 
-    for i in 1..=depth {
-        println!("Depth {i}: {}", recurse(BitBoard::new(), i));
+    for _ in 1..=n {
+        engine.setup();
+        let mut move_seq = vec![];
+        let mut hash: HashResult = hasher.hash_full(&engine.board);
+
+        while engine.victory() == None {
+            let mv = *engine.moves.choose(&mut rng).unwrap();
+            move_seq.push(mv);
+            hash = hasher.delta_hash_move(&engine.board, hash, mv);
+
+            engine.apply_move(mv);
+
+            let refhash = hasher.hash_full(&engine.board);
+
+            if refhash != hash {
+                println!("Inconsistency found:\n delta {hash:X}\n ref-- {refhash:X}");
+                println!("diff: {:X}", hash ^ refhash);
+                let mut boardmap = BoardMap::new_with(None);
+                engine.board.render(&mut boardmap);
+                print_chessboard(&boardmap, Mask::nil());
+                println!(
+                    "Move sequence {}",
+                    move_seq
+                        .iter()
+                        .map(|m| m.from_to.to_string())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                );
+                return;
+            }
+
+            if hashes.contains_key(&refhash) {
+                let mut e = engine.board.clone();
+                let q = hashes[&refhash].clone();
+                e.metadata.tempo = q.metadata.tempo;
+                e.metadata.last_change = q.metadata.last_change;
+                if e != q {
+                    println!("Colission found!");
+                    let mut boardmap = BoardMap::new_with(None);
+                    engine.board.render(&mut boardmap);
+                    print_chessboard(&boardmap, Mask::nil());
+                    println!("{}", engine.printable_metadata());
+
+                    boardmap = BoardMap::new_with(None);
+                    hashes[&refhash].render(&mut boardmap);
+                    print_chessboard(&boardmap, Mask::nil());
+                    let mut e = ShessInteractor::new();
+                    e.board = hashes[&refhash].clone();
+                    println!("{}", e.printable_metadata());
+                }
+            } else {
+                hashes.insert(refhash, engine.board.clone());
+            }
+        }
     }
+
+    println!("Done!");
+}
+
+fn enumerate_moves_check(mvs: &[ProtoMove], mut depth: usize) {
+    println!(
+        "-- Depth checks to depth {depth} after {} --",
+        mvs.iter()
+            .map(|pm| pm.to_string())
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
+
+    let mut board = BitBoard::new();
+
+    for mv in mvs {
+        let mv = *mv;
+
+        let mut moves = vec![];
+        board.generate_moves(&mut moves);
+
+        if let Some(m) = moves.iter().find(|m| m.from_to == mv) {
+            board.apply(*m);
+        } else {
+            let mut board_map = BoardMap::new_with(None);
+            board.render(&mut board_map);
+            print_chessboard(&board_map, mv.as_mask());
+            println!("Illegal move: {}", mv);
+            return;
+        }
+    }
+
+    let mut moves = vec![];
+    board.generate_moves(&mut moves);
+
+    let mut sum = 0;
+    for mv in moves {
+        let mut b = board.clone();
+        b.apply(mv);
+        let n = recurse(b, depth);
+        println!("{}: {}", mv.from_to, n);
+        sum += n;
+    }
+    println!("Nodes searched: {}", sum);
 
     fn recurse(board: BitBoard, depth: usize) -> usize {
         let mut moves = Vec::with_capacity(50);
-        if depth <= 1 {
-            board.generate_moves(&mut moves);
-            return moves.len();
+        if depth == 1 {
+            return 1;
         } else {
             board.generate_moves(&mut moves);
             let mut sum = 0;
@@ -122,21 +223,21 @@ fn random_games_move_enumeration_benchmark(n: usize) {
 
 fn interactive_game() {
     let mut rng = ThreadRng::default();
-    let mut engine = ShessInteractor::new();
-    engine.setup();
+    let mut interactor = ShessInteractor::new();
+    interactor.setup();
     let mut move_log = Vec::<(Algebraic, &'static str)>::new();
     let mut highlight = Mask::nil();
 
     'redraw: loop {
         print!("\x1B[2J\x1B[1;1H");
         stdout().flush();
-        print_chessboard(&engine.as_boardmap(), highlight);
+        print_chessboard(&interactor.as_boardmap(), highlight);
         'command_loop: loop {
             let mut s = String::new();
-            if let Some(vic) = engine.victory() {
+            if let Some(vic) = interactor.victory() {
                 print!("{}> ", vic.to_str());
             } else {
-                print!("{:?}> ", engine.to_move());
+                print!("{:?}> ", interactor.to_move());
             }
             stdout().flush();
             stdin().read_line(&mut s);
@@ -156,23 +257,23 @@ fn interactive_game() {
                 }
                 "new" => {
                     highlight = Mask::nil();
-                    engine.setup();
+                    interactor.setup();
                     move_log.clear();
                     continue 'redraw;
                 }
                 "reset" => {
                     highlight = Mask::nil();
-                    engine.reset();
+                    interactor.reset();
                     move_log.clear();
                     continue 'redraw;
                 }
                 "threats" => {
                     highlight = if let Some(&"W" | &"w") = command.get(1) {
-                        engine.threat_mask(Color::White)
+                        interactor.threat_mask(Color::White)
                     } else if let Some(&"B" | &"b") = command.get(1) {
-                        engine.threat_mask(Color::Black)
+                        interactor.threat_mask(Color::Black)
                     } else {
-                        engine.threat_mask(engine.to_move())
+                        interactor.threat_mask(interactor.to_move())
                     };
                     continue 'redraw;
                 }
@@ -185,7 +286,7 @@ fn interactive_game() {
                         if let (Some(p), Some(sq)) =
                             (ColorPiece::from_str(*p), Algebraic::read_square(*sq))
                         {
-                            engine.place(Some(p), sq);
+                            interactor.place(Some(p), sq);
                             continue 'redraw;
                         } else {
                             println!("Format: <piece letter> <square>");
@@ -199,7 +300,7 @@ fn interactive_game() {
                 "d" => {
                     if let Some(sq) = command.get(1) {
                         if let Some(sq) = Algebraic::read_square(sq) {
-                            engine.place(None, sq);
+                            interactor.place(None, sq);
                             continue 'redraw;
                         } else {
                             println!("Format: <square>");
@@ -211,15 +312,15 @@ fn interactive_game() {
                     }
                 }
                 "w" => {
-                    engine.set_turn(Color::White, engine.board.metadata.turn());
+                    interactor.set_turn(Color::White, interactor.board.metadata.turn());
                     continue 'command_loop;
                 }
                 "b" => {
-                    engine.set_turn(Color::Black, engine.board.metadata.turn());
+                    interactor.set_turn(Color::Black, interactor.board.metadata.turn());
                     continue 'command_loop;
                 }
                 "ls" => {
-                    let legal_moves = engine.printable_moves();
+                    let legal_moves = interactor.printable_moves();
                     if legal_moves.len() == 0 {
                         println!("No legal moves");
                     }
@@ -238,11 +339,11 @@ fn interactive_game() {
                         1
                     };
                     for _ in 1..=n {
-                        let Some(mv) = engine.moves.choose(&mut rng) else {
+                        let Some(mv) = interactor.moves.choose(&mut rng) else {
                             continue 'redraw;
                         };
-                        let not = Algebraic::new(&mv, &engine.moves);
-                        match engine.normal_move(not) {
+                        let not = Algebraic::new(&mv, &interactor.moves);
+                        match interactor.normal_move(not) {
                             Ok(ns) => {
                                 move_log.push(ns.0);
                             }
@@ -270,22 +371,24 @@ fn interactive_game() {
                     continue 'command_loop;
                 }
                 "meta" => {
-                    println!("{}", engine.printable_metadata());
+                    println!("{}", interactor.printable_metadata());
                     continue 'command_loop;
                 }
                 "cast" => {
                     if let Some(&"W" | &"w") = command.get(1) {
-                        engine.board.metadata.white_castling.ooo = command.contains(&"ooo");
-                        engine.board.metadata.white_castling.oo = command.contains(&"oo");
+                        interactor.board.metadata.white_castling.ooo = command.contains(&"ooo");
+                        interactor.board.metadata.white_castling.oo = command.contains(&"oo");
+                        interactor.recalc();
                     } else if let Some(&"B" | &"b") = command.get(1) {
-                        engine.board.metadata.black_castling.ooo = command.contains(&"ooo");
-                        engine.board.metadata.black_castling.oo = command.contains(&"oo");
+                        interactor.board.metadata.black_castling.ooo = command.contains(&"ooo");
+                        interactor.board.metadata.black_castling.oo = command.contains(&"oo");
+                        interactor.recalc();
                     }
                     continue 'command_loop;
                 }
                 s => {
                     if let Some(n) = Algebraic::read(s) {
-                        match engine.normal_move(n) {
+                        match interactor.normal_move(n) {
                             Ok(ns) => {
                                 move_log.push(ns.0);
                                 highlight = ns.1.from_to.as_mask();

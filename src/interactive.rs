@@ -23,6 +23,11 @@ impl ShessInteractor {
         }
     }
 
+    pub fn recalc(&mut self) {
+        self.moves.clear();
+        self.board.generate_moves(&mut self.moves);
+    }
+
     pub fn to_move(&self) -> Color {
         self.board.metadata.to_move
     }
@@ -54,8 +59,7 @@ impl ShessInteractor {
 
     pub fn place(&mut self, p: Option<ColorPiece>, sq: Square) {
         self.board.set_piece(p, sq);
-        self.moves.clear();
-        self.board.generate_moves(&mut self.moves);
+        self.recalc();
     }
 
     pub fn legal_move_mask(&self, sq: Square) -> Mask {
@@ -74,8 +78,7 @@ impl ShessInteractor {
 
     pub fn apply_move(&mut self, m: Move) {
         self.board.apply(m);
-        self.moves.clear();
-        self.board.generate_moves(&mut self.moves);
+        self.recalc();
     }
 
     pub fn normal_move(
@@ -109,8 +112,7 @@ impl ShessInteractor {
         self.board.metadata.to_move = c;
         self.board.metadata.tempo = ((n - 1) * 2 + if c == Color::Black { 1 } else { 0 }) as u16;
         self.board.metadata.last_change = self.board.metadata.tempo;
-        self.moves.clear();
-        self.board.generate_moves(&mut self.moves);
+        self.recalc();
     }
 
     pub fn printable_metadata(&self) -> String {

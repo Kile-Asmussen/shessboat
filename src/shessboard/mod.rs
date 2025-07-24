@@ -28,7 +28,7 @@ use crate::shessboard::{
     zobrist::BitBoardHasher,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BitBoard {
     pub metadata: Metadata,
     pub white: HalfBitBoard,
@@ -39,6 +39,9 @@ pub struct BitBoard {
 fn bitboard_size() {
     dbg!(
         std::mem::size_of::<BitBoard>(),
+        std::mem::size_of::<HalfBitBoard>(),
+        std::mem::size_of::<HalfBitBoard>() * 2,
+        std::mem::size_of::<Metadata>(),
         std::mem::size_of::<BoardMap<Option<ColorPiece>>>()
     );
 }

@@ -16,10 +16,7 @@ impl<T: Sized + Copy> BoardMap<T> {
         Self(it)
     }
 
-    pub const fn new_with(it: T) -> Self
-    where
-        T: Copy,
-    {
+    pub const fn new_with(it: T) -> Self {
         Self([it; 64])
     }
 
@@ -34,9 +31,24 @@ impl<T: Sized + Copy> BoardMap<T> {
 
     pub const fn iter(&self) -> BoardMapIter<T>
     where
-        T: Copy + Sized,
+        T: Sized,
     {
         BoardMapIter(Mask::full().iter(), self)
+    }
+}
+
+impl<T: Sized + Clone> BoardMap<T> {
+    pub fn new_with_clone(it: T) -> Self {
+        Self(std::array::from_fn(|_| it.clone()))
+    }
+
+    pub fn at_clone(&self, sq: Square) -> T {
+        self.0[sq.index() as usize].clone()
+    }
+
+    pub fn set_clone(&mut self, sq: Square, it: T) -> &mut Self {
+        self.0[sq.index() as usize] = it.clone();
+        self
     }
 }
 

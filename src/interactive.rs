@@ -109,6 +109,8 @@ impl ShessInteractor {
         self.board.metadata.to_move = c;
         self.board.metadata.tempo = ((n - 1) * 2 + if c == Color::Black { 1 } else { 0 }) as u16;
         self.board.metadata.last_change = self.board.metadata.tempo;
+        self.moves.clear();
+        self.board.generate_moves(&mut self.moves);
     }
 
     pub fn printable_metadata(&self) -> String {

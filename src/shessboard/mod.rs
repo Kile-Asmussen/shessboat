@@ -56,15 +56,15 @@ impl BitBoard {
         Self::new_board(&BoardMap::new_with(None), Metadata::empty())
     }
 
-    pub fn new_480(n: usize) -> Self {
-        let arr = chess_960(n);
-        Self::new_starting_array(arr, Metadata::new_480(arr))
-    }
+    // pub fn new_480(n: usize) -> Self {
+    //     let arr = chess_960(n);
+    //     Self::new_starting_array(arr, Metadata::new_480(arr))
+    // }
 
-    pub fn new_960(n: usize) -> Self {
-        let arr = chess_960(n);
-        Self::new_starting_array(arr, Metadata::new_960(arr))
-    }
+    // pub fn new_960(n: usize) -> Self {
+    //     let arr = chess_960(n);
+    //     Self::new_starting_array(arr, Metadata::new_960(arr))
+    // }
 
     pub fn new_starting_array(arr: [Piece; 8], metadata: Metadata) -> Self {
         let mut board = [None; 64];
@@ -186,12 +186,16 @@ impl Victory {
     pub fn determine(board: &BitBoard, moves: &[Move]) -> Option<Self> {
         if board.metadata.tempo - board.metadata.last_change >= 150 {
             Some(Self::Draw)
-        } else if board.is_in_check(board.metadata.to_move) && moves.len() == 0 {
-            Some(Self::from_color(board.metadata.to_move.other()))
-        } else if board.sufficient_checkmating_materiel() {
-            None
-        } else {
+        } else if moves.len() == 0 {
+            if board.is_in_check(board.metadata.to_move) {
+                Some(Self::from_color(board.metadata.to_move.other()))
+            } else {
+                Some(Self::Draw)
+            }
+        } else if !board.sufficient_checkmating_materiel() {
             Some(Self::Draw)
+        } else {
+            None
         }
     }
 }

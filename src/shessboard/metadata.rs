@@ -49,29 +49,29 @@ impl Metadata {
         }
     }
 
-    pub fn new_480(arr: [Piece; 8]) -> Self {
-        Self {
-            to_move: Color::White,
-            tempo: 0,
-            last_change: 0,
-            white_castling: CastlingRights::new(),
-            black_castling: CastlingRights::new(),
-            castling_details: CastlingDetails::new_480(arr),
-            en_passant: None,
-        }
-    }
+    // pub fn new_480(arr: [Piece; 8]) -> Self {
+    //     Self {
+    //         to_move: Color::White,
+    //         tempo: 0,
+    //         last_change: 0,
+    //         white_castling: CastlingRights::new(),
+    //         black_castling: CastlingRights::new(),
+    //         castling_details: CastlingDetails::new_480(arr),
+    //         en_passant: None,
+    //     }
+    // }
 
-    pub fn new_960(arr: [Piece; 8]) -> Self {
-        Self {
-            to_move: Color::White,
-            tempo: 0,
-            last_change: 0,
-            white_castling: CastlingRights::new(),
-            black_castling: CastlingRights::new(),
-            castling_details: CastlingDetails::new_960(arr),
-            en_passant: None,
-        }
-    }
+    // pub fn new_960(arr: [Piece; 8]) -> Self {
+    //     Self {
+    //         to_move: Color::White,
+    //         tempo: 0,
+    //         last_change: 0,
+    //         white_castling: CastlingRights::new(),
+    //         black_castling: CastlingRights::new(),
+    //         castling_details: CastlingDetails::new_960(arr),
+    //         en_passant: None,
+    //     }
+    // }
 
     pub fn empty() -> Metadata {
         Self {
@@ -86,7 +86,7 @@ impl Metadata {
                 ooo: false,
                 oo: false,
             },
-            castling_details: CastlingDetails::empty(),
+            castling_details: CastlingDetails::new(),
             en_passant: None,
         }
     }

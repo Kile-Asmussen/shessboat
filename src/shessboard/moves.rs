@@ -67,7 +67,7 @@ fn rook_captured_piece_hypothetical() {
         board
             .white
             .threats(Color::White, board.black.as_mask(), None),
-        Mask::board([
+        Mask::visboard([
             0b_00000001,
             0b_00000001,
             0b_00000001,
@@ -95,7 +95,7 @@ fn rook_captured_piece_hypothetical() {
             board.black.as_mask(),
             Some((Square::at(File::D, Rank::_4), Piece::Pawn))
         ),
-        Mask::board([
+        Mask::visboard([
             0b_00000001,
             0b_00000001,
             0b_00000001,
@@ -119,7 +119,7 @@ fn rook_captured_piece_hypothetical() {
                 .as_mask(),
             None
         ),
-        Mask::board([
+        Mask::visboard([
             0b_00000001,
             0b_00000001,
             0b_00000001,
@@ -138,7 +138,7 @@ fn rook_captured_piece_hypothetical() {
         board
             .white
             .threats(Color::White, board.black.as_mask(), None),
-        Mask::board([
+        Mask::visboard([
             0b_00000001,
             0b_00000001,
             0b_00000001,
@@ -157,7 +157,7 @@ fn rook_captured_piece_hypothetical() {
             board.black.as_mask(),
             Some((Square::at(File::E, Rank::_4), Piece::Pawn))
         ),
-        Mask::board([
+        Mask::visboard([
             0b_00000001,
             0b_00000001,
             0b_00000001,
@@ -181,7 +181,7 @@ fn rook_captured_piece_hypothetical() {
                 .as_mask(),
             Some((Square::at(File::E, Rank::_4), Piece::Pawn))
         ),
-        Mask::board([
+        Mask::visboard([
             0b_00000001,
             0b_00000001,
             0b_00000001,
@@ -479,6 +479,7 @@ impl BitBoard {
         self.active().kings.enumerate_legal_moves(
             color,
             active_mask,
+            passive_mask,
             self.passive(),
             *self.metadata.castling_right(color),
             self.metadata.castling_details,

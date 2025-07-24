@@ -36,7 +36,7 @@ pub enum Shade {
 impl Shade {
     pub const fn as_mask(&self) -> Mask {
         use Shade::*;
-        Mask::board(match self {
+        Mask::visboard(match self {
             Dark => [
                 0b_01010101,
                 0b_10101010,
@@ -77,7 +77,7 @@ pub enum Rank {
 impl Rank {
     pub const fn as_mask(&self) -> Mask {
         use Rank::*;
-        Mask::board(match self {
+        Mask::visboard(match self {
             _1 => [0, 0, 0, 0, 0, 0, 0, !0],
             _2 => [0, 0, 0, 0, 0, 0, !0, 0],
             _3 => [0, 0, 0, 0, 0, !0, 0, 0],
@@ -153,7 +153,7 @@ pub enum File {
 impl File {
     pub const fn as_mask(&self) -> Mask {
         use File::*;
-        Mask::board(match self {
+        Mask::visboard(match self {
             A => [1 << 7; 8],
             B => [1 << 6; 8],
             C => [1 << 5; 8],

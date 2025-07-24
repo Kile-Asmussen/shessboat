@@ -148,6 +148,7 @@ impl HalfBitBoard {
             self.bishops.mut_mask(),
             self.knights.mut_mask(),
             self.pawns.mut_mask(),
+            self.kings.mut_mask(),
         ] {
             *m = m.unset(sq)
         }

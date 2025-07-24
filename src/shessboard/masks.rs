@@ -61,37 +61,45 @@ impl Mask {
         self.as_u64().to_le_bytes()[(rank as u8 - 1) as usize]
     }
 
+    pub const fn new_rank(rank: Rank, val: u8) -> Self {
+        let mut res = [0u8; 8];
+        res[rank.as_rank() as usize] = val;
+        Self::new(u64::from_le_bytes(res))
+    }
+
     pub const fn any(&self) -> bool {
-        self.0 != 0
+        self.as_u64() != 0
     }
 
     pub const fn occupied(&self) -> u32 {
-        self.0.count_ones()
+        self.as_u64().count_ones()
     }
 
-    pub const fn set(mut self, sq: Square) -> Self {
-        self.0 |= sq.as_mask().as_u64();
-        self
+    pub const fn inverse(&self) -> Mask {
+        Self::new(!self.as_u64())
     }
 
-    pub const fn unset(mut self, sq: Square) -> Self {
-        self.0 &= !sq.as_mask().as_u64();
-        self
+    pub const fn set(self, sq: Square) -> Self {
+        self.overlay(sq.as_mask())
     }
 
-    pub const fn first(&self) -> Option<Square> {
+    pub const fn unset(self, sq: Square) -> Self {
+        self.overlap(sq.as_mask().inverse())
+    }
+
+    pub const fn first(self) -> Option<Square> {
         Square::new(self.0.trailing_zeros() as i8)
     }
 
-    pub const fn last(&self) -> Option<Square> {
+    pub const fn last(self) -> Option<Square> {
         Square::new(self.0.leading_zeros() as i8)
     }
 
-    pub const fn sans_first(&self) -> Self {
+    pub const fn sans_first(self) -> Self {
         let Some(sq) = self.first() else {
-            return *self;
+            return self;
         };
-        let mut res = *self;
+        let mut res = self;
         res.unset(sq)
     }
 
@@ -99,7 +107,7 @@ impl Mask {
         self.as_u64() & sq.as_mask().as_u64() != 0
     }
 
-    pub const fn board(x: [u8; 8]) -> Mask {
+    pub const fn visboard(x: [u8; 8]) -> Mask {
         Mask::new(u64::from_be_bytes([
             x[0].reverse_bits(),
             x[1].reverse_bits(),

@@ -2,7 +2,7 @@ use std::arch::x86_64::CpuidResult;
 
 use crate::shessboard::{
     boardmap::BoardMap,
-    castling::{CastlingDetails, CastlingInfo, CastlingRights, CastlingSide},
+    castling::{CastlingDetail, CastlingDetails, CastlingInfo, CastlingRights, CastlingSide},
     enums::{Color, ColorPiece, Dir, File, Piece, Rank},
     half::HalfBitBoard,
     masks::Mask,
@@ -78,32 +78,11 @@ impl Kings {
         Self::MOVES.overlays(self.as_mask())
     }
 
-    pub const CASTLING_OOO: [Mask; 8] = [
-        Mask::nil(),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_10000000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_11000000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_01100000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_00110000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_00011000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_00001100u8]),
-        Mask::nil(),
-    ];
-
-    pub const CASTLING_OO: [Mask; 8] = [
-        Mask::nil(),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_10000000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_11000000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_01100000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_00110000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_00011000u8]),
-        Mask::board([0, 0, 0, 0, 0, 0, 0, 0b_00001100u8]),
-        Mask::nil(),
-    ];
-
     pub fn enumerate_legal_moves(
         &self,
         color: Color,
         active_mask: Mask,
+        passive_mask: Mask,
         passive: &HalfBitBoard,
         castling: CastlingRights,
         castling_details: CastlingDetails,
@@ -134,6 +113,51 @@ impl Kings {
             }
         }
 
-        // TODO: Fix castling queenside
+        let unking = (passive_mask | active_mask) & !self.as_mask();
+
+        if castling.ooo {
+            Self::castling_move(
+                self.as_mask(),
+                color,
+                castling_details.ooo,
+                threats,
+                unking,
+                res,
+            )
+        }
+
+        if castling.oo {
+            Self::castling_move(
+                self.as_mask(),
+                color,
+                castling_details.oo,
+                threats,
+                unking,
+                res,
+            )
+        }
+    }
+
+    // TODO: fix
+    fn castling_move(
+        mut king: Mask,
+        color: Color,
+        detail: CastlingDetail,
+        threats: Mask,
+        unking: Mask,
+        res: &mut Vec<Move>,
+    ) {
+        let rank = color.starting_rank();
+        king |= Mask::new_rank(rank, detail.king_mask);
+        let rook = Mask::new_rank(rank, detail.rook_mask);
+        if !(king & threats).any() && !(king & unking).any() && !(rook & unking).any() {
+            res.push(Move {
+                color_and_piece: ColorPiece::new(color, Piece::King),
+                from_to: detail.king_move.as_move(rank),
+                castling: Some(detail.rook_move.as_move(rank)),
+                capture: None,
+                promotion: None,
+            })
+        }
     }
 }

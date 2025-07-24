@@ -13,15 +13,6 @@ pub struct CastlingInfo<T> {
     pub oo: T,
 }
 
-impl<T> CastlingInfo<T> {
-    fn side(&self, c: CastlingSide) -> &T {
-        match c {
-            CastlingSide::OOO => &self.ooo,
-            CastlingSide::OO => &self.oo,
-        }
-    }
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CastlingSide {
     OOO = 1,
@@ -64,7 +55,7 @@ impl SemiProtoMove {
     pub const fn as_move(&self, rank: Rank) -> ProtoMove {
         ProtoMove {
             from: Square::at(self.from, rank),
-            to: Square::at(self.from, rank),
+            to: Square::at(self.to, rank),
         }
     }
 }
@@ -101,40 +92,11 @@ impl CastlingDetails {
         }
     }
 
-    pub fn new_480(arr: [Piece; 8]) -> Self {
-        todo!()
-    }
+    // pub fn new_480(arr: [Piece; 8]) -> Self {
+    //     todo!()
+    // }
 
-    pub fn new_960(arr: [Piece; 8]) -> Self {
-        todo!()
-    }
-
-    pub fn empty() -> Self {
-        Self {
-            ooo: CastlingDetail {
-                rook_mask: 0,
-                king_mask: 0,
-                rook_move: SemiProtoMove {
-                    from: File::A,
-                    to: File::A,
-                },
-                king_move: SemiProtoMove {
-                    from: File::A,
-                    to: File::A,
-                },
-            },
-            oo: CastlingDetail {
-                rook_mask: 0,
-                king_mask: 0,
-                rook_move: SemiProtoMove {
-                    from: File::A,
-                    to: File::A,
-                },
-                king_move: SemiProtoMove {
-                    from: File::A,
-                    to: File::A,
-                },
-            },
-        }
-    }
+    // pub fn new_960(arr: [Piece; 8]) -> Self {
+    //     todo!()
+    // }
 }

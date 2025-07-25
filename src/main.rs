@@ -42,33 +42,44 @@ pub mod shessboard;
 pub mod shessboat;
 
 fn main() {
-    check_best_move();
+    check_best_move(3);
 }
 
-fn check_best_move() {
+fn check_best_move(depth: u16) {
     let board = BitBoard::new();
     let hasher = BitBoardHasher::new();
-    let mut moves = Vec::with_capacity(50);
-    board.generate_moves(&mut moves);
+    let mut toplevel_moves = Vec::with_capacity(50);
+    board.generate_moves(&mut toplevel_moves);
 
     let hash = hasher.hash_full(&board);
     let three = ThreefoldRule::start(hash);
+    let mut nodes_searched = 0;
 
     let mut scratch = Vec::with_capacity(50);
+    let mut new_scratch = Vec::with_capacity(50);
 
-    for mv in &moves {
+    for mv in &toplevel_moves {
         let mv = *mv;
+
+        let mut b = board.clone();
+        b.apply(mv);
+        b.generate_moves(&mut scratch);
+
         let value = basic_minimax(
-            4,
-            board.clone(),
-            &moves,
-            &mut scratch,
+            depth,
+            b,
+            &scratch,
+            &mut new_scratch,
             hash,
             &hasher,
             &three,
+            &mut nodes_searched,
         );
 
-        println!("{} {}", mv.from_to, value)
+        scratch.clear();
+
+        println!("{} {} ({})", mv.from_to, value, nodes_searched);
+        nodes_searched = 0;
     }
 }
 

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::shessboard::zobrist::HashResult;
+use crate::shessboard::zobrist::{BitBoardHasher, HashResult};
 
 pub enum ThreefoldRule<'a> {
     Static(HashMap<HashResult, usize>),
@@ -11,11 +11,23 @@ impl ThreefoldRule<'static> {
     pub fn empty() -> Self {
         Self::Static(HashMap::new())
     }
+
+    pub fn from_iter<I>(it: I) -> Self
+    where
+        I: IntoIterator<Item = HashResult>,
+    {
+        let mut res = HashMap::new();
+        for mut h in it {
+            h &= BitBoardHasher::HASH_BITS;
+            *res.entry(h).or_insert(0) += 1;
+        }
+        Self::Static(res)
+    }
 }
 
 impl<'a> ThreefoldRule<'a> {
     pub fn see(&'a self, hash: HashResult) -> Self {
-        Self::Speculative(hash, self)
+        Self::Speculative(hash & BitBoardHasher::HASH_BITS, self)
     }
 
     pub fn collapse(&self) -> ThreefoldRule<'static> {

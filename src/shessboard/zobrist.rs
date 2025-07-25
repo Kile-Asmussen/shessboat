@@ -1,5 +1,4 @@
 use std::{
-    backtrace,
     collections::{BTreeSet, HashMap, HashSet, btree_map::Values},
     error::{self, Error},
     fmt::{Debug, Display, UpperHex},
@@ -57,7 +56,6 @@ impl MaskHasher {
 
 #[derive(Default)]
 pub struct BitBoardHasher {
-    pub black_to_move: HashResult,
     pub en_passant_file: [HashResult; 8],
     pub white: HalfBitBoardHasher,
     pub black: HalfBitBoardHasher,
@@ -75,7 +73,7 @@ impl BitBoardHasher {
     }
 
     pub fn hash_full(&self, board: &BitBoard) -> HashResult {
-        self.hash_to_move(board.metadata.to_move)
+        Self::hash_to_move(board.metadata.to_move)
             ^ self.hash_en_passant(board.metadata.en_passant)
             ^ self.white.hash_castle(board.metadata.white_castling)
             ^ self.black.hash_castle(board.metadata.black_castling)
@@ -83,21 +81,22 @@ impl BitBoardHasher {
             ^ self.black.hash(&board.black)
     }
 
-    pub fn hash_to_move(&self, turn: Color) -> HashResult {
-        if turn == Color::Black {
-            self.black_to_move //.clone()
-        } else {
-            0
-            // HashResult::default()
-        }
-    }
-
     pub fn hash_en_passant(&self, en_passant: Option<EnPassant>) -> HashResult {
         if let Some(EnPassant { to, capture }) = en_passant {
             self.en_passant_file[to.file().as_file() as usize] //.clone()
         } else {
             0
-            //HashResult::default()
+        }
+    }
+
+    pub const BLACK_TO_MOVE: HashResult = 1 << 63;
+    pub const HASH_BITS: HashResult = !Self::BLACK_TO_MOVE;
+
+    pub fn hash_to_move(color: Color) -> HashResult {
+        if color == Color::Black {
+            Self::BLACK_TO_MOVE
+        } else {
+            0
         }
     }
 
@@ -109,7 +108,8 @@ impl BitBoardHasher {
             Color::Black => (&self.black, &self.white),
         };
 
-        hash ^= self.black_to_move; //.clone();
+        hash &= Self::HASH_BITS;
+        hash ^= Self::hash_to_move(color.other());
 
         if let Some(p) = mv.promotion {
             hash ^=
@@ -136,21 +136,14 @@ impl BitBoardHasher {
 
         hash ^= self.hash_en_passant(board.metadata.en_passant)
             ^ self.hash_en_passant(mv.en_passant_square());
-
         hash
     }
 }
 
 impl Fill for BitBoardHasher {
     fn fill<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
-        self.black_to_move = rng.random();
         self.en_passant_file.fill(rng);
-        // self.black_to_move = BTreeSetWrapper(BTreeSet::from_iter(["black".to_string()]));
-        // let q = "abcdefgh"
-        //     .chars()
-        //     .map(|c| BTreeSetWrapper(BTreeSet::from_iter([format!("epc {}", c)])))
-        //     .collect::<Vec<_>>();
-        // self.en_passant_file = std::array::from_fn(|n| q[n].clone());
+        self.en_passant_file = self.en_passant_file.map(|x| x & Self::HASH_BITS);
         self.white.fill(rng);
         self.black.fill(rng);
     }
@@ -194,94 +187,23 @@ impl HalfBitBoardHasher {
     }
 
     pub fn hash_castle(&self, castling: CastlingRights) -> HashResult {
-        (if castling.ooo {
-            self.castling.ooo //.clone()
-        } else {
-            0
-            //HashResult::default()
-        }) ^ (if castling.oo {
-            self.castling.oo //.clone()
-        } else {
-            0
-            //HashResult::default()
-        })
+        (if castling.ooo { self.castling.ooo } else { 0 })
+            ^ (if castling.oo { self.castling.oo } else { 0 })
     }
 }
 
 impl Fill for HalfBitBoardHasher {
     fn fill<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
-        // if self.color == Color::White {
         self.castling = CastlingInfo {
-            ooo: rng.random(),
-            // ooo: BTreeSetWrapper(BTreeSet::from_iter(["O-O-O".to_string()])),
-            oo: rng.random(),
-            // oo: BTreeSetWrapper(BTreeSet::from_iter(["O-O".to_string()])),
+            ooo: rng.random::<HashResult>() & BitBoardHasher::HASH_BITS,
+            oo: rng.random::<HashResult>() & BitBoardHasher::HASH_BITS,
         };
-        // } else {
-        //     self.castling = CastlingInfo {
-        //         ooo: BTreeSetWrapper(BTreeSet::from_iter(["o-o-o".to_string()])),
-        //         oo: BTreeSetWrapper(BTreeSet::from_iter(["o-o".to_string()])),
-        //     };
-        // }
 
-        self.kings.fill(rng /* self.color, Piece::King */);
-        self.queens.fill(rng /* self.color, Piece::Queen */);
-        self.rooks.fill(rng /* self.color, Piece::Rook */);
-        self.bishops.fill(rng /* self.color, Piece::Bishop */);
-        self.knights.fill(rng /* self.color, Piece::Knight */);
-        self.pawns.fill(rng /* self.color, Piece::Pawn */);
+        self.kings.fill(rng);
+        self.queens.fill(rng);
+        self.rooks.fill(rng);
+        self.bishops.fill(rng);
+        self.knights.fill(rng);
+        self.pawns.fill(rng);
     }
 }
-
-// #[derive(Clone, Debug, PartialEq, Eq, Default)]
-// pub struct BTreeSetWrapper(BTreeSet<String>);
-// impl BitXor for BTreeSetWrapper {
-//     type Output = BTreeSetWrapper;
-
-//     fn bitxor(self, rhs: Self) -> Self::Output {
-//         Self(
-//             self.0
-//                 .symmetric_difference(&rhs.0)
-//                 .map(|s| s.clone())
-//                 .collect(),
-//         )
-//     }
-// }
-// impl BitXorAssign for BTreeSetWrapper {
-//     fn bitxor_assign(&mut self, rhs: Self) {
-//         *self = self.clone() ^ rhs;
-//     }
-// }
-// impl Display for BTreeSetWrapper {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         Debug::fmt(&self, f)
-//     }
-// }
-// impl UpperHex for BTreeSetWrapper {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         Debug::fmt(&self, f)
-//     }
-// }
-// impl Hash for BTreeSetWrapper {
-//     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-//         for s in &self.0 {
-//             s.hash(state)
-//         }
-//     }
-// }
-//
-// impl BoardMap<BTreeSetWrapper> {
-//     pub fn fill<R: ?Sized>(&mut self, _: &mut R, c: Color, p: Piece) {
-//         let color_piece = ColorPiece::new(c, p);
-//         for sq in Mask::full() {
-//             self.set_clone(
-//                 sq,
-//                 BTreeSetWrapper(BTreeSet::from_iter([format!(
-//                     "{}{}",
-//                     color_piece.letter(),
-//                     sq
-//                 )])),
-//             );
-//         }
-//     }
-// }

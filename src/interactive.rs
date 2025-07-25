@@ -7,6 +7,7 @@ use crate::shessboard::{
     metadata::Metadata,
     moves::{Move, ProtoMove},
     notation::Algebraic,
+    repetions::ThreefoldRule,
     squares::Square,
 };
 
@@ -145,7 +146,7 @@ En passant square: {epc}",
     }
 
     pub fn victory(&self) -> Option<GameEnd> {
-        GameEnd::determine(&self.board, &self.moves)
+        GameEnd::determine(&self.board, &self.moves, 0, &ThreefoldRule::empty())
     }
 
     pub fn printable_moves(&self) -> Vec<String> {

@@ -91,12 +91,4 @@ impl CastlingDetails {
             },
         }
     }
-
-    // pub fn new_480(arr: [Piece; 8]) -> Self {
-    //     todo!()
-    // }
-
-    // pub fn new_960(arr: [Piece; 8]) -> Self {
-    //     todo!()
-    // }
 }

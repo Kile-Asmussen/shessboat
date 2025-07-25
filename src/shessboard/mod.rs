@@ -212,6 +212,7 @@ impl GameEnd {
         } else if !board.sufficient_checkmating_materiel() {
             Some(Self::Draw)
         } else if three.count(hash) >= 3 {
+            Some(Self::Draw)
         } else {
             None
         }

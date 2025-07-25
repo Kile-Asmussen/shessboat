@@ -7,6 +7,7 @@ use crate::shessboard::{
     masks::{Mask, SquareIter},
     pieces::Micropawns,
     squares::Square,
+    zobrist::{BitBoardHasher, HashResult},
 };
 
 #[derive(Debug)]
@@ -162,14 +163,10 @@ fn board_setup() {
     assert_eq!(board.at(Square::h8), 6);
 }
 
-impl<T> Fill for BoardMap<T>
-where
-    [T]: Fill,
-{
+impl Fill for BoardMap<HashResult> {
     fn fill<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
-        for i in 0..64 {
-            Fill::fill(&mut self.0, rng);
-        }
+        Fill::fill(&mut self.0, rng);
+        self.0 = self.0.map(|x| x & BitBoardHasher::HASH_BITS)
     }
 }
 

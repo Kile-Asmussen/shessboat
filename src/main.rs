@@ -30,6 +30,7 @@ use crate::{
             bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
             rooks::Rooks, slide_move_stop,
         },
+        repetions::ThreefoldRule,
         squares::Square,
         zobrist::{BitBoardHasher, HashResult},
     },
@@ -40,7 +41,15 @@ pub mod shessboard;
 pub mod shessboat;
 
 fn main() {
-    interactive_game();
+    zobrist_hashing_check(10000);
+}
+
+fn check_best_move() {
+    let board = BitBoard::new();
+    let hasher = BitBoardHasher::new();
+    let mut moves = Vec::with_capacity(50);
+    board.generate_moves(&mut moves);
+    let three = ThreefoldRule::from_iter([hasher.hash_full(&board)]);
 }
 
 fn zobrist_hashing_check(n: usize) {
@@ -60,13 +69,15 @@ fn zobrist_hashing_check(n: usize) {
             move_seq.push(mv);
             hash = hasher.delta_hash_move(&engine.board, hash, mv);
 
+            let c = engine.board.metadata.to_move;
+
             engine.apply_move(mv);
 
             let refhash = hasher.hash_full(&engine.board);
 
             if refhash != hash {
-                println!("Inconsistency found:\n delta {hash:X}\n ref-- {refhash:X}");
-                println!("diff: {:X}", hash ^ refhash);
+                println!("Inconsistency found:\n delta {hash:016X}\n ref-- {refhash:016X}");
+                println!(" diff- {:016X}", hash ^ refhash);
                 let mut boardmap = BoardMap::new_with(None);
                 engine.board.render(&mut boardmap);
                 print_chessboard(&boardmap, Mask::nil());

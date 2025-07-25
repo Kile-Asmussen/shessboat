@@ -34,6 +34,7 @@ use crate::{
         squares::Square,
         zobrist::{BitBoardHasher, HashResult},
     },
+    shessboat::basic_minimax,
 };
 
 pub mod interactive;
@@ -41,7 +42,7 @@ pub mod shessboard;
 pub mod shessboat;
 
 fn main() {
-    zobrist_hashing_check(10000);
+    check_best_move();
 }
 
 fn check_best_move() {
@@ -49,7 +50,26 @@ fn check_best_move() {
     let hasher = BitBoardHasher::new();
     let mut moves = Vec::with_capacity(50);
     board.generate_moves(&mut moves);
-    let three = ThreefoldRule::from_iter([hasher.hash_full(&board)]);
+
+    let hash = hasher.hash_full(&board);
+    let three = ThreefoldRule::start(hash);
+
+    let mut scratch = Vec::with_capacity(50);
+
+    for mv in &moves {
+        let mv = *mv;
+        let value = basic_minimax(
+            4,
+            board.clone(),
+            &moves,
+            &mut scratch,
+            hash,
+            &hasher,
+            &three,
+        );
+
+        println!("{} {}", mv.from_to, value)
+    }
 }
 
 fn zobrist_hashing_check(n: usize) {

@@ -9,7 +9,7 @@ use crate::shessboard::{
 
 mod heuristics;
 
-fn basic_minimax<'a>(
+pub fn basic_minimax<'a>(
     depth: u16,
     board: BitBoard,
     moves: &[Move],

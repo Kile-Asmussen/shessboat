@@ -12,6 +12,10 @@ impl ThreefoldRule<'static> {
         Self::Static(HashMap::new())
     }
 
+    pub fn start(hash: HashResult) -> Self {
+        Self::Static(HashMap::from_iter([(hash & BitBoardHasher::HASH_BITS, 1)]))
+    }
+
     pub fn from_iter<I>(it: I) -> Self
     where
         I: IntoIterator<Item = HashResult>,

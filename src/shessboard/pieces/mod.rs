@@ -13,8 +13,8 @@ pub mod pawns;
 pub mod queens;
 pub mod rooks;
 
-pub type Micropawns = i64;
-pub const P: Micropawns = 1_000_000;
+pub type Millipawns = i64;
+pub const P: Millipawns = 1_000;
 
 pub const fn slide_move_stop(
     positive: bool,

@@ -18,15 +18,16 @@ use crate::shessboard::{
     enums::{Color, ColorPiece, Piece},
     half::HalfBitBoard,
     masks::Mask,
+    metadata::Metadata,
     moves::Move,
     pieces::{
-        Micropawns,
+        Millipawns,
         pawns::{EnPassant, Pawns},
     },
     squares::Square,
 };
 
-pub type PositionHashes = HashMap<HashResult, Micropawns>;
+pub type PositionHashes = HashMap<HashResult, Millipawns>;
 
 #[derive(Debug, Default)]
 struct ReadHashesError;
@@ -100,7 +101,7 @@ impl BitBoardHasher {
         }
     }
 
-    pub fn delta_hash_move(&self, board: &BitBoard, mut hash: HashResult, mv: Move) -> HashResult {
+    pub fn delta(&self, metadata: &Metadata, mut hash: HashResult, mv: Move) -> HashResult {
         let (color, piece) = mv.color_and_piece.split();
 
         let (same, opposite) = match color {
@@ -126,15 +127,15 @@ impl BitBoardHasher {
             hash ^= same.hash_piece(Piece::Rook, cast.from) ^ same.hash_piece(Piece::Rook, cast.to)
         }
 
-        let (mut same_cast, mut opp_cast) = board.metadata.castling_rights(color);
-        let (same_new_cast, opp_new_cast) = mv.castling_rights(board.metadata.castling_details);
+        let (mut same_cast, mut opp_cast) = metadata.castling_rights(color);
+        let (same_new_cast, opp_new_cast) = mv.castling_rights(metadata.castling_details);
 
         hash ^= same.hash_castle(same_cast) ^ opposite.hash_castle(opp_cast);
         same_cast.update(same_new_cast);
         opp_cast.update(opp_new_cast);
         hash ^= same.hash_castle(same_cast) ^ opposite.hash_castle(opp_cast);
 
-        hash ^= self.hash_en_passant(board.metadata.en_passant)
+        hash ^= self.hash_en_passant(metadata.en_passant)
             ^ self.hash_en_passant(mv.en_passant_square());
         hash
     }

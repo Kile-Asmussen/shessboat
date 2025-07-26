@@ -4,7 +4,7 @@ use crate::shessboard::{
     half::HalfBitBoard,
     masks::Mask,
     moves::{Move, ProtoMove},
-    pieces::{Micropawns, kings::Kings, queens::Queens, slide_move_stop},
+    pieces::{Millipawns, kings::Kings, queens::Queens, slide_move_stop},
     squares::Square,
 };
 
@@ -29,8 +29,8 @@ impl Rooks {
         &mut self.0
     }
 
-    pub const fn materiel(&self) -> Micropawns {
-        self.as_mask().occupied() as i64 * 5_000_000
+    pub const fn materiel(&self) -> Millipawns {
+        self.as_mask().occupied() as i64 * 5_000
     }
 
     pub const fn captured(&self, cap: Option<(Square, Piece)>) -> Self {

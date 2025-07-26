@@ -22,7 +22,7 @@ use crate::shessboard::{
     metadata::Metadata,
     moves::Move,
     pieces::{
-        Micropawns, P, bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns,
+        Millipawns, P, bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns,
         queens::Queens, rooks::Rooks,
     },
     repetions::ThreefoldRule,
@@ -165,7 +165,7 @@ pub enum GameEnd {
 }
 
 impl GameEnd {
-    pub const fn value(&self, c: Color) -> Micropawns {
+    pub const fn value(&self, c: Color) -> Millipawns {
         if let GameEnd::Draw = *self {
             0
         } else if let (GameEnd::WhiteWins, Color::White) = (*self, c) {
@@ -177,8 +177,8 @@ impl GameEnd {
         }
     }
 
-    pub const VICTORY: Micropawns = 1_000_000 * P;
-    pub const DEFEAT: Micropawns = -Self::VICTORY;
+    pub const VICTORY: Millipawns = 1_000_000 * P;
+    pub const DEFEAT: Millipawns = -Self::VICTORY;
 
     pub const fn from_color(c: Color) -> Self {
         match c {
@@ -189,8 +189,8 @@ impl GameEnd {
 
     pub const fn to_str(&self) -> &'static str {
         match self {
-            Self::WhiteWins => "0–1",
-            Self::BlackWins => "1–0",
+            Self::WhiteWins => "1–0",
+            Self::BlackWins => "0–1",
             Self::Draw => "½–½",
         }
     }

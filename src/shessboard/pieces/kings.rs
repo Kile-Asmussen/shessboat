@@ -7,7 +7,7 @@ use crate::shessboard::{
     half::HalfBitBoard,
     masks::Mask,
     moves::{Move, ProtoMove},
-    pieces::{Micropawns, queens::Queens, slide_move_stop},
+    pieces::{Millipawns, queens::Queens, slide_move_stop},
     squares::Square,
 };
 

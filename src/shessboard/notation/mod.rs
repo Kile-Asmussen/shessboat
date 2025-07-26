@@ -121,7 +121,7 @@ impl Algebraic {
     pub fn read(s: &str) -> Option<(Self, &str)> {
         if let Some((n, s)) = Self::read_pawn_move(s) {
             Some((Self::Normal(n), s))
-        } else if let Some((n, s)) = Self::read_pawn_move(s) {
+        } else if let Some((n, s)) = Self::read_piece_move(s) {
             Some((Self::Normal(n), s))
         } else if let Some((c, s)) = Self::read_castling(s) {
             Some((Self::Castling(c), s))

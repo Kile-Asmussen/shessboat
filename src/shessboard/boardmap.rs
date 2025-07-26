@@ -5,7 +5,7 @@ use rand::Fill;
 use crate::shessboard::{
     enums::{ColorPiece, File, Rank},
     masks::{Mask, SquareIter},
-    pieces::Micropawns,
+    pieces::Millipawns,
     squares::Square,
     zobrist::{BitBoardHasher, HashResult},
 };
@@ -110,8 +110,8 @@ impl BoardMap<Option<ColorPiece>> {
     }
 }
 
-impl BoardMap<Micropawns> {
-    pub const fn sum_mask(&self, m: Mask) -> Micropawns {
+impl BoardMap<Millipawns> {
+    pub const fn sum_mask(&self, m: Mask) -> Millipawns {
         let mut res = 0;
         let mut it = m.iter();
         while let Some(sq) = it.next() {
@@ -120,7 +120,7 @@ impl BoardMap<Micropawns> {
         res
     }
 
-    pub const fn board(b: &[[Micropawns; 8]; 8]) -> Self {
+    pub const fn board(b: &[[Millipawns; 8]; 8]) -> Self {
         let mut res = [0; 64];
         let mut it = Mask::full().iter();
 
@@ -132,7 +132,7 @@ impl BoardMap<Micropawns> {
         Self::new(res)
     }
 
-    pub const fn board_and_mirror(b: &[[Micropawns; 8]; 8]) -> (Self, Self) {
+    pub const fn board_and_mirror(b: &[[Millipawns; 8]; 8]) -> (Self, Self) {
         let mut b = *b;
         let white = Self::board(&b);
         let b = [b[7], b[6], b[5], b[4], b[3], b[2], b[1], b[0]];

@@ -42,7 +42,7 @@ pub mod shessboard;
 pub mod shessboat;
 
 fn main() {
-    check_best_move(3);
+    interactive_game();
 }
 
 fn check_best_move(depth: u16) {
@@ -98,7 +98,7 @@ fn zobrist_hashing_check(n: usize) {
         while engine.victory() == None {
             let mv = *engine.moves.choose(&mut rng).unwrap();
             move_seq.push(mv);
-            hash = hasher.delta_hash_move(&engine.board, hash, mv);
+            hash = hasher.delta(&engine.board.metadata, hash, mv);
 
             let c = engine.board.metadata.to_move;
 

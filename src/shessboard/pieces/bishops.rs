@@ -5,7 +5,7 @@ use crate::shessboard::{
     masks::Mask,
     moves::{Move, ProtoMove},
     pieces::{
-        Micropawns,
+        Millipawns,
         kings::Kings,
         queens::{self, Queens},
         slide_move_stop,
@@ -26,8 +26,8 @@ impl Bishops {
         Self(mask)
     }
 
-    pub const fn materiel(&self) -> Micropawns {
-        self.as_mask().occupied() as i64 * 3_333_333
+    pub const fn materiel(&self) -> Millipawns {
+        self.as_mask().occupied() as i64 * 3_333
     }
 
     pub const fn as_mask(&self) -> Mask {

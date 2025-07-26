@@ -7,7 +7,7 @@ use crate::shessboard::{
     masks::Mask,
     moves::{Move, ProtoMove},
     pieces::{
-        Micropawns,
+        Millipawns,
         bishops::{self, Bishops},
         kings::Kings,
         rooks::Rooks,
@@ -29,8 +29,8 @@ impl Queens {
         Self(mask)
     }
 
-    pub const fn materiel(&self) -> Micropawns {
-        self.as_mask().occupied() as i64 * 9_000_000
+    pub const fn materiel(&self) -> Millipawns {
+        self.as_mask().occupied() as i64 * 9_000
     }
 
     pub const fn as_mask(&self) -> Mask {

@@ -397,6 +397,8 @@ impl BitBoard {
         }
     }
 
+    pub fn unapply(&mut self, mv: Move) {}
+
     pub fn generate_moves(&self, res: &mut Vec<Move>) {
         let active_mask = self.active().as_mask();
         let passive_mask = self.passive().as_mask();

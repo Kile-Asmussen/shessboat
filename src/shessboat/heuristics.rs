@@ -1,9 +1,9 @@
 use crate::shessboard::{
     boardmap::BoardMap,
-    pieces::{Micropawns, P},
+    pieces::{Millipawns, P},
 };
 
-const OPENING_INCENTIVE: (BoardMap<Micropawns>, BoardMap<Micropawns>) = {
+const OPENING_INCENTIVE: (BoardMap<Millipawns>, BoardMap<Millipawns>) = {
     BoardMap::board_and_mirror(&[
         [0; 8],
         [0; 8],
@@ -16,7 +16,7 @@ const OPENING_INCENTIVE: (BoardMap<Micropawns>, BoardMap<Micropawns>) = {
     ])
 };
 
-const PAWN_POSITION: (BoardMap<Micropawns>, BoardMap<Micropawns>) = {
+const PAWN_POSITION: (BoardMap<Millipawns>, BoardMap<Millipawns>) = {
     BoardMap::board_and_mirror(&[
         [0; 8],
         [10 * P / 10; 8],
@@ -29,7 +29,7 @@ const PAWN_POSITION: (BoardMap<Micropawns>, BoardMap<Micropawns>) = {
     ])
 };
 
-const KING_SAFETY_INCENTIVE: (BoardMap<Micropawns>, BoardMap<Micropawns>) = {
+const KING_SAFETY_INCENTIVE: (BoardMap<Millipawns>, BoardMap<Millipawns>) = {
     BoardMap::board_and_mirror(&[
         [0; 8], [0; 8], [0; 8], [0; 8], [0; 8], [0; 8], [0; 8], [0; 8],
     ])

@@ -21,6 +21,7 @@ use crate::{
         BitBoard, GameEnd,
         boardmap::{BoardMap, BoardMapIter},
         enums::{Color, ColorPiece, File, Piece, Rank, Shade},
+        forced_draws::ThreefoldRule,
         half::HalfBitBoard,
         masks::Mask,
         metadata::Metadata,
@@ -30,11 +31,9 @@ use crate::{
             bishops::Bishops, kings::Kings, knights::Knights, pawns::Pawns, queens::Queens,
             rooks::Rooks, slide_move_stop,
         },
-        repetions::ThreefoldRule,
         squares::Square,
         zobrist::{BitBoardHasher, HashResult},
     },
-    shessboat::basic_minimax,
 };
 
 pub mod interactive;
@@ -43,44 +42,6 @@ pub mod shessboat;
 
 fn main() {
     interactive_game();
-}
-
-fn check_best_move(depth: u16) {
-    let board = BitBoard::new();
-    let hasher = BitBoardHasher::new();
-    let mut toplevel_moves = Vec::with_capacity(50);
-    board.generate_moves(&mut toplevel_moves);
-
-    let hash = hasher.hash_full(&board);
-    let three = ThreefoldRule::start(hash);
-    let mut nodes_searched = 0;
-
-    let mut scratch = Vec::with_capacity(50);
-    let mut new_scratch = Vec::with_capacity(50);
-
-    for mv in &toplevel_moves {
-        let mv = *mv;
-
-        let mut b = board.clone();
-        b.apply(mv);
-        b.generate_moves(&mut scratch);
-
-        let value = basic_minimax(
-            depth,
-            b,
-            &scratch,
-            &mut new_scratch,
-            hash,
-            &hasher,
-            &three,
-            &mut nodes_searched,
-        );
-
-        scratch.clear();
-
-        println!("{} {} ({})", mv.from_to, value, nodes_searched);
-        nodes_searched = 0;
-    }
 }
 
 fn zobrist_hashing_check(n: usize) {
@@ -127,7 +88,6 @@ fn zobrist_hashing_check(n: usize) {
                 let mut e = engine.board.clone();
                 let q = hashes[&refhash].clone();
                 e.metadata.tempo = q.metadata.tempo;
-                e.metadata.last_change = q.metadata.last_change;
                 if e != q {
                     println!("Colission found!");
                     let mut boardmap = BoardMap::new_with(None);
@@ -354,11 +314,11 @@ fn interactive_game() {
                     }
                 }
                 "w" => {
-                    interactor.set_turn(Color::White, interactor.board.metadata.turn());
+                    interactor.board.metadata.to_move = Color::White;
                     continue 'command_loop;
                 }
                 "b" => {
-                    interactor.set_turn(Color::Black, interactor.board.metadata.turn());
+                    interactor.board.metadata.to_move = Color::White;
                     continue 'command_loop;
                 }
                 "ls" => {

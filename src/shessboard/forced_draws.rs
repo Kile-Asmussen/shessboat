@@ -1,6 +1,46 @@
 use std::collections::HashMap;
 
-use crate::shessboard::zobrist::{BitBoardHasher, HashResult};
+use crate::shessboard::{
+    enums::ColorPiece,
+    moves::Move,
+    zobrist::{BitBoardHasher, HashResult},
+};
+
+#[derive(Clone, Copy)]
+pub enum LastChange<'a> {
+    Static(u16),
+    Speculative(u16, &'a LastChange<'a>),
+}
+
+impl LastChange<'static> {
+    pub fn start() -> Self {
+        Self::Static(0)
+    }
+}
+
+impl<'a> LastChange<'a> {
+    pub fn see(&'a self, tempo: u16, mv: Move) -> Self {
+        if mv.capture.is_some()
+            || mv.color_and_piece == ColorPiece::BlackPawn
+            || mv.color_and_piece == ColorPiece::WhitePawn
+        {
+            Self::Speculative(tempo, self)
+        } else {
+            *self
+        }
+    }
+
+    pub fn tempo(&self) -> u16 {
+        match self {
+            LastChange::Static(n) => *n,
+            LastChange::Speculative(n, _) => *n,
+        }
+    }
+
+    pub fn collapse(&'a self) -> LastChange<'static> {
+        LastChange::Static(self.tempo())
+    }
+}
 
 pub enum ThreefoldRule<'a> {
     Static(HashMap<HashResult, usize>),

@@ -1,13 +1,13 @@
 pub mod boardmap;
 pub mod castling;
 pub mod enums;
+pub mod forced_draws;
 pub mod half;
 pub mod masks;
 pub mod metadata;
 pub mod moves;
 pub mod notation;
 pub mod pieces;
-pub mod repetions;
 pub mod squares;
 pub mod zobrist;
 
@@ -17,6 +17,7 @@ use crate::shessboard::{
     boardmap::BoardMap,
     castling::{CastlingDetail, CastlingDetails, CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece, File, Piece, Rank},
+    forced_draws::{LastChange, ThreefoldRule},
     half::HalfBitBoard,
     masks::Mask,
     metadata::Metadata,
@@ -25,7 +26,6 @@ use crate::shessboard::{
         Millipawns, P, bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns,
         queens::Queens, rooks::Rooks,
     },
-    repetions::ThreefoldRule,
     squares::Square,
     zobrist::{BitBoardHasher, HashResult},
 };
@@ -199,9 +199,10 @@ impl GameEnd {
         board: &BitBoard,
         moves: &[Move],
         hash: HashResult,
+        change: &'a LastChange<'a>,
         three: &'a ThreefoldRule<'a>,
     ) -> Option<Self> {
-        if board.metadata.tempo - board.metadata.last_change >= 150 {
+        if board.metadata.tempo - change.tempo() >= 150 {
             Some(Self::Draw)
         } else if moves.len() == 0 {
             if board.is_in_check(board.metadata.to_move) {

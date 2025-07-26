@@ -1,3 +1,5 @@
+use std::str;
+
 use crate::shessboard::{
     castling::{CastlingDetails, CastlingRights},
     enums::{Color, Piece},
@@ -8,7 +10,6 @@ use crate::shessboard::{
 pub struct Metadata {
     pub to_move: Color,
     pub tempo: u16,
-    pub last_change: u16,
     pub white_castling: CastlingRights,
     pub black_castling: CastlingRights,
     pub castling_details: CastlingDetails,
@@ -40,8 +41,7 @@ impl Metadata {
     pub fn new() -> Self {
         Self {
             to_move: Color::White,
-            tempo: 0,
-            last_change: 0,
+            tempo: 1,
             white_castling: CastlingRights::new(),
             black_castling: CastlingRights::new(),
             castling_details: CastlingDetails::new(),
@@ -77,7 +77,6 @@ impl Metadata {
         Self {
             to_move: Color::White,
             tempo: 0,
-            last_change: 0,
             white_castling: CastlingRights {
                 ooo: false,
                 oo: false,

@@ -3,11 +3,11 @@ use crate::shessboard::{
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRights},
     enums::{Color, ColorPiece},
+    forced_draws::{LastChange, ThreefoldRule},
     masks::Mask,
     metadata::Metadata,
     moves::{Move, ProtoMove},
     notation::Algebraic,
-    repetions::ThreefoldRule,
     squares::Square,
 };
 
@@ -109,13 +109,6 @@ impl ShessInteractor {
         }
     }
 
-    pub fn set_turn(&mut self, c: Color, n: usize) {
-        self.board.metadata.to_move = c;
-        self.board.metadata.tempo = ((n - 1) * 2 + if c == Color::Black { 1 } else { 0 }) as u16;
-        self.board.metadata.last_change = self.board.metadata.tempo;
-        self.recalc();
-    }
-
     pub fn printable_metadata(&self) -> String {
         let metadata = &self.board.metadata;
         let to_move = metadata.to_move;
@@ -126,12 +119,11 @@ impl ShessInteractor {
             .map(|x| format!("{}", x.to))
             .unwrap_or("n/a".to_string());
         let turn = metadata.turn();
-        let clock = metadata.tempo - metadata.last_change;
         let (wooo, woo) = castles(metadata.white_castling);
         let (booo, boo) = castles(metadata.black_castling);
 
         return format!(
-            "Turn: {turn} ({clock}), {to_move:?} to move
+            "Turn: {turn}, {to_move:?} to move
 White castling righs: {wooo} K {woo}
 Black castling rights: {booo} K {boo}
 En passant square: {epc}",
@@ -146,7 +138,13 @@ En passant square: {epc}",
     }
 
     pub fn victory(&self) -> Option<GameEnd> {
-        GameEnd::determine(&self.board, &self.moves, 0, &ThreefoldRule::empty())
+        GameEnd::determine(
+            &self.board,
+            &self.moves,
+            0,
+            &LastChange::Static(0),
+            &ThreefoldRule::empty(),
+        )
     }
 
     pub fn printable_moves(&self) -> Vec<String> {

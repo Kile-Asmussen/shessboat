@@ -366,9 +366,6 @@ impl BitBoard {
 
         // update metadata
         self.metadata.to_move = color.other();
-        if piece == Piece::Pawn || mv.capture.is_some() {
-            self.metadata.last_change = self.metadata.tempo;
-        }
         self.metadata.tempo += 1;
         self.metadata.en_passant = mv.en_passant_square();
 
@@ -397,7 +394,49 @@ impl BitBoard {
         }
     }
 
-    pub fn unapply(&mut self, mv: Move) {}
+    pub fn undo(&mut self, mv: Move) {
+        let (color, piece) = mv.color_and_piece.split();
+
+        // update metadata
+        self.metadata.to_move = color.other();
+        self.metadata.tempo -= 1;
+        self.metadata.en_passant = if let Some((capture, Piece::Pawn)) = mv.capture {
+            if piece == Piece::Pawn && mv.from_to.to != capture {
+                Some(EnPassant {
+                    to: mv.from_to.to,
+                    capture,
+                })
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        // calculate changes to castling rights
+        let (cr_active, cr_passive) = mv.castling_rights(self.metadata.castling_details);
+
+        let (active_castling, passive_castling) = self.metadata.castling_rights_mut(color);
+
+        active_castling.update(cr_active);
+        passive_castling.update(cr_passive);
+
+        // calculate changes to board
+        let (active, passive) = self.color_mut(color);
+        if let Some((sq, piece)) = mv.capture {
+            *passive.piece_mask_mut(piece) ^= sq.as_mask();
+        }
+        if let Some(p) = mv.promotion {
+            *active.piece_mask_mut(Piece::Pawn) ^= mv.from_to.from.as_mask();
+            *active.piece_mask_mut(p) ^= mv.from_to.to.as_mask();
+        } else {
+            *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
+        }
+        match mv.castling {
+            Some(pm) => *active.piece_mask_mut(Piece::Rook) ^= pm.as_mask(),
+            None => {}
+        }
+    }
 
     pub fn generate_moves(&self, res: &mut Vec<Move>) {
         let active_mask = self.active().as_mask();

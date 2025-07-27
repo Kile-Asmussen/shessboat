@@ -3,7 +3,7 @@ use std::hash::Hash;
 mod heuristics;
 
 use crate::shessboard::{
-    BitBoard, GameEnd,
+    BitBoard,
     boardmap::BoardMap,
     forced_draws::{LastChange, ThreefoldRule},
     moves::Move,

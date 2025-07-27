@@ -18,10 +18,10 @@ use rand::{
 use crate::{
     interactive::ShessInteractor,
     shessboard::{
-        BitBoard, GameEnd,
+        BitBoard,
         boardmap::{BoardMap, BoardMapIter},
-        enums::{Color, ColorPiece, File, Piece, Rank, Shade},
-        forced_draws::ThreefoldRule,
+        enums::{Color, ColorPiece, File, GameEnd, Piece, Rank, Shade},
+        forced_draws::{LastChange, ThreefoldRule},
         half::HalfBitBoard,
         masks::Mask,
         metadata::Metadata,
@@ -41,7 +41,7 @@ pub mod shessboard;
 pub mod shessboat;
 
 fn main() {
-    interactive_game();
+    random_games_undo(1);
 }
 
 fn zobrist_hashing_check(n: usize) {
@@ -169,8 +169,53 @@ fn enumerate_moves_check(mvs: &[ProtoMove], mut depth: usize) {
     }
 }
 
+fn random_games_undo(n: usize) {
+    let mut rng = StdRng::from_seed(*b"3.141592653589793238462643383279");
+    let hasher = BitBoardHasher::new();
+    println!("\n  Running {n} random games...\n");
+
+    for _ in 1..=n {
+        let mut board = BitBoard::new();
+        let three = ThreefoldRule::empty();
+        let changes = LastChange::start();
+        let mut moves = Vec::with_capacity(50);
+        let mut move_log = Vec::new();
+        board.generate_moves(&mut moves);
+
+        while let None = GameEnd::determine(&board, &moves, 0, &changes, &three) {
+            let mv = *moves.choose(&mut rng).unwrap();
+            board.apply(mv);
+            moves.clear();
+            board.generate_moves(&mut moves);
+            move_log.push((mv, board.clone()));
+        }
+
+        move_log.reverse();
+
+        for (mv, refboard) in move_log {
+            if board != refboard {
+                println!("Inconsistency found");
+                println!("ref:");
+                let mut b = BoardMap::new_with(None);
+                refboard.render(&mut b);
+                print_chessboard(&b, Mask::nil());
+                println!("{:?}", refboard.metadata);
+                println!("actual:");
+                b = BoardMap::new_with(None);
+                board.render(&mut b);
+                print_chessboard(&b, Mask::nil());
+                println!("{:?}", board.metadata);
+                break;
+            }
+            board.undo(mv);
+        }
+    }
+
+    println!()
+}
+
 fn random_games_move_enumeration_benchmark(n: usize) {
-    let mut rng = ThreadRng::default();
+    let mut rng = StdRng::from_seed(*b"3.141592653589793238462643383279");
     let mut engine = ShessInteractor::new();
     let mut longboard = BoardMap::<Option<ColorPiece>>::new_with(None);
     let mut longcolor = Color::White;

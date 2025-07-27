@@ -31,11 +31,7 @@ impl Algebraic {
     pub fn new(mv: &Move, legal_moves: &[Move]) -> Self {
         match mv.castling {
             Some(pm) => {
-                if pm.positive() {
-                    return Self::Castling(CastlingSide::OO);
-                } else {
-                    return Self::Castling(CastlingSide::OOO);
-                }
+                return Self::Castling(pm);
             }
             None => {}
         }
@@ -91,11 +87,7 @@ impl Algebraic {
         match self {
             Algebraic::Castling(castling_side) => {
                 if let Some(pm) = mv.castling {
-                    if pm.positive() {
-                        castling_side == CastlingSide::OOO
-                    } else {
-                        castling_side == CastlingSide::OO
-                    }
+                    castling_side == CastlingSide::OOO
                 } else {
                     false
                 }

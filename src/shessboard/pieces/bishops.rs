@@ -70,6 +70,7 @@ impl Bishops {
         res: &mut Vec<Move>,
     ) {
         let color_and_piece = ColorPiece::new(color, Piece::Bishop);
+        let prev_epc = self
 
         if !self.as_mask().any() {
             return;

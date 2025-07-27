@@ -23,8 +23,14 @@ use crate::shessboard::{
     metadata::Metadata,
     moves::Move,
     pieces::{
-        Millipawns, P, bishops::Bishops, chess_960, kings::Kings, knights::Knights, pawns::Pawns,
-        queens::Queens, rooks::Rooks,
+        Millipawns, P,
+        bishops::Bishops,
+        chess_960,
+        kings::Kings,
+        knights::Knights,
+        pawns::{EnPassant, Pawns},
+        queens::Queens,
+        rooks::Rooks,
     },
     squares::Square,
     zobrist::{BitBoardHasher, HashResult},
@@ -156,66 +162,184 @@ impl BitBoard {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub enum GameEnd {
-    WhiteWins = 1,
-    BlackWins = 2,
-    Draw = 3,
-}
+impl BitBoard {
+    pub fn apply(&mut self, mv: Move) {
+        let (color, piece) = mv.color_and_piece.split();
 
-impl GameEnd {
-    pub const fn value(&self, c: Color) -> Millipawns {
-        if let GameEnd::Draw = *self {
-            0
-        } else if let (GameEnd::WhiteWins, Color::White) = (*self, c) {
-            Self::VICTORY
-        } else if let (GameEnd::BlackWins, Color::Black) = (*self, c) {
-            Self::VICTORY
+        // update metadata
+        self.metadata.to_move = color.other();
+        self.metadata.tempo += 1;
+        self.metadata.en_passant = mv.en_passant_square();
+
+        // calculate changes to castling rights
+        let details = self.metadata.castling_details;
+        let (cr_active, cr_passive) = mv.castling_rights(self.metadata.castling_details);
+
+        let (active_castling, passive_castling) = self.metadata.castling_rights_mut(color);
+
+        active_castling.update(cr_active);
+        passive_castling.update(cr_passive);
+
+        // calculate changes to board
+        let (active, passive) = self.color_mut(color);
+
+        if let Some((sq, piece)) = mv.capture {
+            *passive.piece_mask_mut(piece) ^= sq.as_mask();
+        }
+
+        if let Some(p) = mv.promotion {
+            *active.piece_mask_mut(Piece::Pawn) ^= mv.from_to.from.as_mask();
+            *active.piece_mask_mut(p) ^= mv.from_to.to.as_mask();
+        } else if let Some(castling::CastlingSide::OOO) = mv.castling {
+            *active.piece_mask_mut(Piece::Rook) ^= details
+                .ooo
+                .rook_move
+                .as_move(color.starting_rank())
+                .as_mask();
+            *active.piece_mask_mut(Piece::King) ^= details
+                .ooo
+                .king_move
+                .as_move(color.starting_rank())
+                .as_mask()
+        } else if let Some(castling::CastlingSide::OO) = mv.castling {
+            *active.piece_mask_mut(Piece::Rook) ^= details
+                .oo
+                .rook_move
+                .as_move(color.starting_rank())
+                .as_mask();
+            *active.piece_mask_mut(Piece::King) ^= details
+                .oo
+                .king_move
+                .as_move(color.starting_rank())
+                .as_mask()
         } else {
-            Self::DEFEAT
+            *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
         }
     }
 
-    pub const VICTORY: Millipawns = 1_000_000 * P;
-    pub const DEFEAT: Millipawns = -Self::VICTORY;
+    pub fn undo(&mut self, mv: Move) {
+        let (color, piece) = mv.color_and_piece.split();
 
-    pub const fn from_color(c: Color) -> Self {
-        match c {
-            Color::White => Self::WhiteWins,
-            Color::Black => Self::BlackWins,
-        }
-    }
-
-    pub const fn to_str(&self) -> &'static str {
-        match self {
-            Self::WhiteWins => "1–0",
-            Self::BlackWins => "0–1",
-            Self::Draw => "½–½",
-        }
-    }
-
-    pub fn determine<'a>(
-        board: &BitBoard,
-        moves: &[Move],
-        hash: HashResult,
-        change: &'a LastChange<'a>,
-        three: &'a ThreefoldRule<'a>,
-    ) -> Option<Self> {
-        if board.metadata.tempo - change.tempo() >= 150 {
-            Some(Self::Draw)
-        } else if moves.len() == 0 {
-            if board.is_in_check(board.metadata.to_move) {
-                Some(Self::from_color(board.metadata.to_move.other()))
+        // update metadata
+        self.metadata.to_move = color;
+        self.metadata.tempo -= 1;
+        self.metadata.en_passant = if let Some((capture, Piece::Pawn)) = mv.capture {
+            if piece == Piece::Pawn && mv.from_to.to != capture {
+                Some(EnPassant {
+                    to: mv.from_to.to,
+                    capture,
+                })
             } else {
-                Some(Self::Draw)
+                None
             }
-        } else if !board.sufficient_checkmating_materiel() {
-            Some(Self::Draw)
-        } else if three.count(hash) >= 3 {
-            Some(Self::Draw)
         } else {
             None
+        };
+
+        // calculate changes to castling rights
+        let details = self.metadata.castling_details;
+        let (cr_active, cr_passive) = mv.castling_rights(self.metadata.castling_details);
+
+        let (active_castling, passive_castling) = self.metadata.castling_rights_mut(color);
+
+        active_castling.downdate(cr_active);
+        passive_castling.downdate(cr_passive);
+
+        // calculate changes to board
+        let (active, passive) = self.color_mut(color);
+
+        if let Some((sq, piece)) = mv.capture {
+            *passive.piece_mask_mut(piece) ^= sq.as_mask();
         }
+
+        if let Some(p) = mv.promotion {
+            *active.piece_mask_mut(Piece::Pawn) ^= mv.from_to.from.as_mask();
+            *active.piece_mask_mut(p) ^= mv.from_to.to.as_mask();
+        } else if let Some(castling::CastlingSide::OOO) = mv.castling {
+            *active.piece_mask_mut(Piece::Rook) ^= details
+                .ooo
+                .rook_move
+                .as_move(color.starting_rank())
+                .as_mask();
+            *active.piece_mask_mut(Piece::King) ^= details
+                .ooo
+                .king_move
+                .as_move(color.starting_rank())
+                .as_mask()
+        } else if let Some(castling::CastlingSide::OO) = mv.castling {
+            *active.piece_mask_mut(Piece::Rook) ^= details
+                .oo
+                .rook_move
+                .as_move(color.starting_rank())
+                .as_mask();
+            *active.piece_mask_mut(Piece::King) ^= details
+                .oo
+                .king_move
+                .as_move(color.starting_rank())
+                .as_mask()
+        } else {
+            *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
+        }
+    }
+
+    pub fn generate_moves(&self, res: &mut Vec<Move>) {
+        let active_mask = self.active().as_mask();
+        let passive_mask = self.passive().as_mask();
+        let color = self.metadata.to_move;
+
+        self.active().queens.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            passive_mask,
+            self.active().kings,
+            res,
+        );
+
+        self.active().rooks.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            passive_mask,
+            self.active().kings,
+            res,
+        );
+
+        self.active().bishops.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            passive_mask,
+            self.active().kings,
+            res,
+        );
+
+        self.active().knights.enumerate_legal_moves(
+            color,
+            active_mask,
+            self.passive(),
+            self.active().kings,
+            res,
+        );
+
+        self.active().pawns.enumerate_legal_moves(
+            color,
+            active_mask,
+            passive_mask,
+            self.passive(),
+            self.metadata.en_passant,
+            self.active().kings,
+            res,
+        );
+
+        self.active().kings.enumerate_legal_moves(
+            color,
+            active_mask,
+            passive_mask,
+            self.passive(),
+            self.metadata.castling_rights(color).0,
+            self.metadata.castling_details,
+            res,
+        );
     }
 }

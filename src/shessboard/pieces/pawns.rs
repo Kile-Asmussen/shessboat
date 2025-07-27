@@ -226,5 +226,11 @@ impl Pawns {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnPassant {
     pub to: Square,
-    pub capture: Square,
+
+}
+
+impl EnPassant {
+    pub fn capture(self) -> Square {
+        if 
+    }
 }

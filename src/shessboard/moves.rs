@@ -243,12 +243,12 @@ impl Display for ProtoMove {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[repr(align(8))]
 pub struct Move {
     pub color_and_piece: ColorPiece,
     pub from_to: ProtoMove,
-    pub castling: Option<ProtoMove>,
+    pub castling: Option<CastlingSide>,
     pub capture: Option<(Square, Piece)>,
+    pub prev_epc: Option<Square>,
     pub promotion: Option<Piece>,
 }
 
@@ -358,144 +358,4 @@ fn size_fuckery() {
         std::mem::size_of::<Move>()
     );
     assert_eq!(std::mem::align_of::<Move>(), 8);
-}
-
-impl BitBoard {
-    pub fn apply(&mut self, mv: Move) {
-        let (color, piece) = mv.color_and_piece.split();
-
-        // update metadata
-        self.metadata.to_move = color.other();
-        self.metadata.tempo += 1;
-        self.metadata.en_passant = mv.en_passant_square();
-
-        // calculate changes to castling rights
-        let (cr_active, cr_passive) = mv.castling_rights(self.metadata.castling_details);
-
-        let (active_castling, passive_castling) = self.metadata.castling_rights_mut(color);
-
-        active_castling.update(cr_active);
-        passive_castling.update(cr_passive);
-
-        // calculate changes to board
-        let (active, passive) = self.color_mut(color);
-        if let Some((sq, piece)) = mv.capture {
-            *passive.piece_mask_mut(piece) ^= sq.as_mask();
-        }
-        if let Some(p) = mv.promotion {
-            *active.piece_mask_mut(Piece::Pawn) ^= mv.from_to.from.as_mask();
-            *active.piece_mask_mut(p) ^= mv.from_to.to.as_mask();
-        } else {
-            *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
-        }
-        match mv.castling {
-            Some(pm) => *active.piece_mask_mut(Piece::Rook) ^= pm.as_mask(),
-            None => {}
-        }
-    }
-
-    pub fn undo(&mut self, mv: Move) {
-        let (color, piece) = mv.color_and_piece.split();
-
-        // update metadata
-        self.metadata.to_move = color.other();
-        self.metadata.tempo -= 1;
-        self.metadata.en_passant = if let Some((capture, Piece::Pawn)) = mv.capture {
-            if piece == Piece::Pawn && mv.from_to.to != capture {
-                Some(EnPassant {
-                    to: mv.from_to.to,
-                    capture,
-                })
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-
-        // calculate changes to castling rights
-        let (cr_active, cr_passive) = mv.castling_rights(self.metadata.castling_details);
-
-        let (active_castling, passive_castling) = self.metadata.castling_rights_mut(color);
-
-        active_castling.update(cr_active);
-        passive_castling.update(cr_passive);
-
-        // calculate changes to board
-        let (active, passive) = self.color_mut(color);
-        if let Some((sq, piece)) = mv.capture {
-            *passive.piece_mask_mut(piece) ^= sq.as_mask();
-        }
-        if let Some(p) = mv.promotion {
-            *active.piece_mask_mut(Piece::Pawn) ^= mv.from_to.from.as_mask();
-            *active.piece_mask_mut(p) ^= mv.from_to.to.as_mask();
-        } else {
-            *active.piece_mask_mut(mv.color_and_piece.piece()) ^= mv.from_to.as_mask();
-        }
-        match mv.castling {
-            Some(pm) => *active.piece_mask_mut(Piece::Rook) ^= pm.as_mask(),
-            None => {}
-        }
-    }
-
-    pub fn generate_moves(&self, res: &mut Vec<Move>) {
-        let active_mask = self.active().as_mask();
-        let passive_mask = self.passive().as_mask();
-        let color = self.metadata.to_move;
-
-        self.active().queens.enumerate_legal_moves(
-            color,
-            active_mask,
-            self.passive(),
-            passive_mask,
-            self.active().kings,
-            res,
-        );
-
-        self.active().rooks.enumerate_legal_moves(
-            color,
-            active_mask,
-            self.passive(),
-            passive_mask,
-            self.active().kings,
-            res,
-        );
-
-        self.active().bishops.enumerate_legal_moves(
-            color,
-            active_mask,
-            self.passive(),
-            passive_mask,
-            self.active().kings,
-            res,
-        );
-
-        self.active().knights.enumerate_legal_moves(
-            color,
-            active_mask,
-            self.passive(),
-            self.active().kings,
-            res,
-        );
-
-        self.active().pawns.enumerate_legal_moves(
-            color,
-            active_mask,
-            passive_mask,
-            self.passive(),
-            self.metadata.en_passant,
-            self.active().kings,
-            res,
-        );
-
-        self.active().kings.enumerate_legal_moves(
-            color,
-            active_mask,
-            passive_mask,
-            self.passive(),
-            self.metadata.castling_rights(color).0,
-            self.metadata.castling_details,
-            res,
-        );
-    }
 }

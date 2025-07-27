@@ -1,4 +1,11 @@
-use crate::shessboard::squares::Square;
+use crate::shessboard::{
+    BitBoard,
+    forced_draws::{LastChange, ThreefoldRule},
+    moves::Move,
+    pieces::{Millipawns, P},
+    squares::Square,
+    zobrist::HashResult,
+};
 
 use super::masks::Mask;
 
@@ -454,5 +461,69 @@ impl ColorPiece {
             },
             cs.as_str(),
         ))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum GameEnd {
+    WhiteWins = 1,
+    BlackWins = 2,
+    Draw = 3,
+}
+
+impl GameEnd {
+    pub const fn value(&self, c: Color) -> Millipawns {
+        if let GameEnd::Draw = *self {
+            0
+        } else if let (GameEnd::WhiteWins, Color::White) = (*self, c) {
+            Self::VICTORY
+        } else if let (GameEnd::BlackWins, Color::Black) = (*self, c) {
+            Self::VICTORY
+        } else {
+            Self::DEFEAT
+        }
+    }
+
+    pub const VICTORY: Millipawns = 1_000_000 * P;
+    pub const DEFEAT: Millipawns = -Self::VICTORY;
+
+    pub const fn from_color(c: Color) -> Self {
+        match c {
+            Color::White => Self::WhiteWins,
+            Color::Black => Self::BlackWins,
+        }
+    }
+
+    pub const fn to_str(&self) -> &'static str {
+        match self {
+            Self::WhiteWins => "1–0",
+            Self::BlackWins => "0–1",
+            Self::Draw => "½–½",
+        }
+    }
+
+    pub fn determine<'a>(
+        board: &BitBoard,
+        moves: &[Move],
+        hash: HashResult,
+        change: &'a LastChange<'a>,
+        three: &'a ThreefoldRule<'a>,
+    ) -> Option<Self> {
+        if board.metadata.tempo - change.tempo() >= 150 {
+            Some(Self::Draw)
+        } else if moves.len() == 0 {
+            if board.is_in_check(board.metadata.to_move) {
+                Some(Self::from_color(board.metadata.to_move.other()))
+            } else {
+                Some(Self::Draw)
+            }
+        } else if !board.sufficient_checkmating_materiel() {
+            Some(Self::Draw)
+        } else if three.count(hash) >= 3 {
+            Some(Self::Draw)
+        } else {
+            None
+        }
     }
 }

@@ -127,6 +127,7 @@ impl Kings {
                 self.as_mask(),
                 color,
                 castling_details.ooo,
+                CastlingSide::OOO,
                 threats,
                 unking,
                 res,
@@ -138,6 +139,7 @@ impl Kings {
                 self.as_mask(),
                 color,
                 castling_details.oo,
+                CastlingSide::OO,
                 threats,
                 unking,
                 res,
@@ -150,6 +152,7 @@ impl Kings {
         mut king: Mask,
         color: Color,
         detail: CastlingDetail,
+        castling: CastlingSide,
         threats: Mask,
         unking: Mask,
         res: &mut Vec<Move>,
@@ -160,8 +163,11 @@ impl Kings {
         if !(king & threats).any() && !(king & unking).any() && !(rook & unking).any() {
             res.push(Move {
                 color_and_piece: ColorPiece::new(color, Piece::King),
-                from_to: detail.king_move.as_move(rank),
-                castling: Some(detail.rook_move.as_move(rank)),
+                from_to: ProtoMove {
+                    from: detail.king_move.as_move(rank).from,
+                    to: detail.rook_move.as_move(rank).from,
+                },
+                castling: Some(castling),
                 capture: None,
                 promotion: None,
             })

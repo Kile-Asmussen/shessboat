@@ -1,8 +1,8 @@
 use crate::shessboard::{
-    BitBoard, GameEnd,
+    BitBoard,
     boardmap::BoardMap,
     castling::{CastlingInfo, CastlingRights},
-    enums::{Color, ColorPiece},
+    enums::{Color, ColorPiece, GameEnd},
     forced_draws::{LastChange, ThreefoldRule},
     masks::Mask,
     metadata::Metadata,

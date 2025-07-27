@@ -13,7 +13,17 @@ pub struct CastlingInfo<T> {
     pub oo: T,
 }
 
+impl<T: Clone + Copy> CastlingInfo<T> {
+    pub fn select(&self, side: CastlingSide) -> T {
+        match side {
+            CastlingSide::OOO => self.ooo,
+            CastlingSide::OO => self.oo,
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u8)]
 pub enum CastlingSide {
     OOO = 1,
     OO,
@@ -32,6 +42,11 @@ impl CastlingRights {
     pub fn update(&mut self, cr: CastlingRights) {
         self.ooo &= cr.ooo;
         self.oo &= cr.oo;
+    }
+
+    pub fn downdate(&mut self, cr: CastlingRights) {
+        self.ooo &= !cr.ooo;
+        self.oo &= !cr.oo;
     }
 }
 

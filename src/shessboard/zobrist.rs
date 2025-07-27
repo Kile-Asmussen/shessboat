@@ -123,7 +123,12 @@ impl BitBoardHasher {
             hash ^= opposite.hash_piece(p, sq);
         }
 
-        if let Some(cast) = mv.castling {
+        if let Some(cs) = mv.castling {
+            let cast = metadata
+                .castling_details
+                .select(cs)
+                .rook_move
+                .as_move(color.starting_rank());
             hash ^= same.hash_piece(Piece::Rook, cast.from) ^ same.hash_piece(Piece::Rook, cast.to)
         }
 
